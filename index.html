@@ -44,7 +44,8 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--t
 .prov-card .pbar i{display:block;height:100%}
 
 /* INSTALL PWA BTN */
-.install-btn{background:#fff;color:var(--azul);border:none;font-weight:700;font-size:11px;padding:6px 12px;cursor:pointer;border-radius:2px;display:none}
+.install-btn{background:#16a085;color:#fff;border:none;font-weight:700;font-size:11px;padding:7px 14px;cursor:pointer;border-radius:3px;display:none;white-space:nowrap}
+.install-btn:hover{background:#138a72}
 
 /* MAPA */
 .map-card{background:var(--card);border:1px solid var(--bd);margin-top:8px}
@@ -71,21 +72,36 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--t
 /* TABLA */
 .tbl-card{background:var(--card);border:1px solid var(--bd);border-top:none;margin-bottom:8px}
 .scroll{max-height:62vh;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
-thead th{position:sticky;top:0;background:var(--azul);color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:7px 8px;text-align:left;cursor:pointer;white-space:nowrap;z-index:2}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{position:sticky;top:0;background:var(--azul);color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;text-align:left;cursor:pointer;white-space:nowrap;z-index:2}
 thead th.nosort{cursor:default}
 thead th.num{text-align:right}
-thead th:nth-child(1),tbody td:nth-child(1){width:28px;text-align:center}
-thead th:nth-child(3),tbody td:nth-child(3){width:108px}
-thead th:nth-child(4),tbody td:nth-child(4){width:64px}
-thead th:nth-child(5),tbody td:nth-child(5){width:80px}
-thead th:nth-child(6),tbody td:nth-child(6){width:76px}
-tbody td{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:middle}
+/* col 1 (+), col 2 nombre (libre), col 3 días, col 4 %inst, col 5 score, col 6 instalac */
+col.c-exp{width:34px} col.c-dias{width:120px} col.c-pct{width:72px} col.c-score{width:90px} col.c-inst{width:86px}
+tbody td{padding:8px 10px;border-bottom:1px solid #eee;vertical-align:middle}
 tbody td.num{text-align:right;font-family:var(--mono)}
+tbody td.c1{text-align:center}
 tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
-.medname{font-weight:600;font-size:12px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
-.medsub{font-size:9.5px;color:var(--mut);font-family:var(--mono);margin-top:1px}
-.exp-ind{font-family:var(--mono);font-weight:700;color:var(--azul2)}
+.medname{font-weight:600;font-size:12.5px;line-height:1.3}
+.medsub{font-size:10px;color:var(--mut);font-family:var(--mono);margin-top:2px}
+.exp-ind{font-family:var(--mono);font-weight:700;color:var(--azul2);font-size:15px}
+
+/* ===== MÓVIL: tabla -> tarjetas ===== */
+@media(max-width:680px){
+  thead.main-head{display:none}
+  table,tbody,tr.med,td{display:block;width:100%}
+  tr.med{border-bottom:none;border:1px solid var(--bd2);margin-bottom:6px;padding:8px 10px;position:relative}
+  tr.med td{border:none;padding:2px 0;text-align:left!important}
+  tr.med td.c1{position:absolute;top:8px;right:8px;width:auto}
+  /* etiquetas para celdas numéricas en móvil */
+  tr.med td.cell-dias::before{content:'Días cobertura: ';font-size:10px;color:var(--mut);text-transform:uppercase}
+  tr.med td.cell-pct::before{content:'% Inst.: ';font-size:10px;color:var(--mut);text-transform:uppercase}
+  tr.med td.cell-score::before{content:'Score salud: ';font-size:10px;color:var(--mut);text-transform:uppercase}
+  tr.med td.cell-inst::before{content:'Instalaciones: ';font-size:10px;color:var(--mut);text-transform:uppercase}
+  tr.med td.num{font-family:inherit}
+  tr.med td.num .dias,tr.med td.num .sc{font-family:var(--mono)}
+  tr.exprow td{padding:0}
+}
 
 /* badges */
 .clase{display:inline-block;background:#37474f;color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px;cursor:help;vertical-align:middle}
@@ -102,6 +118,7 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
 .cl-row{background:#f4f7fa;border-left:3px solid var(--azul2);padding:7px 10px;margin-bottom:7px}
 .cl-row b{color:var(--azul)}
 .cl-row div{font-size:12px;color:var(--txt);margin-top:2px}
+.cl-data{font-family:var(--mono);font-size:11px;color:var(--azul);background:#fff;border:1px solid var(--bd2);padding:4px 7px;margin-top:5px!important;border-radius:2px}
 .cl-note{background:var(--azul-cl);border:1px solid #aacbe2;padding:8px 10px;font-size:11.5px;border-radius:2px}
 .imp{font-size:10px;font-weight:700}
 .imp.v{color:var(--rojo)}.imp.e{color:var(--amar)}.imp.s{color:#999}
@@ -154,8 +171,8 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
       <h1>Disponibilidad de Medicamentos</h1>
       <div class="sub" id="hsub">Caja de Seguro Social · Panamá</div>
     </div>
-    <button class="install-btn" id="installBtn">📲 Instalar app</button>
     <div class="inst-badge" id="instBadge">—</div>
+    <button class="install-btn" id="installBtn">⤓ Instalar app</button>
   </div>
 
   <!-- BANDA DE PROVINCIAS -->
@@ -179,7 +196,7 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
   <!-- FILTROS -->
   <div class="filters">
     <input type="text" id="q" placeholder="🔍 Buscar medicamento (ej. amlodipina)…" oninput="onSearch(this.value)"/>
-    <select id="provSel" onchange="onProv(this.value)"><option value="">🌎 Todo el país</option></select>
+    <select id="provSel" onchange="onProv(this.value)"><option value="">Todo el país</option></select>
     <select id="tipoSel" onchange="onTipo(this.value)"><option value="">Todo tipo de unidad</option></select>
     <div class="seg" id="impSeg">
       <button data-imp="" onclick="onImp('')">Todos</button>
@@ -192,7 +209,8 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
   <div class="tbl-card">
     <div class="scroll">
       <table>
-        <thead><tr>
+        <colgroup><col class="c-exp"/><col/><col class="c-dias"/><col class="c-pct"/><col class="c-score"/><col class="c-inst"/></colgroup>
+        <thead class="main-head"><tr>
           <th class="nosort"></th>
           <th onclick="sortBy('sum')">Medicamento</th>
           <th class="num" onclick="sortBy('dias')">Días cobertura</th>
@@ -214,14 +232,14 @@ const f = n => (n==null?'-':Number(n).toLocaleString('es-PA'));
 let OPT = 90; // óptimo de días; se reasigna desde m.optimo_dias al cargar
 
 // ---- estado ----
-let st = { q:'', prov:'', tipo:'', imp:'VITAL', sort:{k:'dias',d:1}, expand:null, expTab:'mapa', skuSel:null };
+let st = { q:'', prov:'', tipo:'', imp:'VITAL', sort:{k:'salud',d:-1}, expand:null, expTab:'mapa', skuSel:null };
 
 // ---- helpers de días/color ----
 // días: null=sin existencia · 9999=tiene stock pero sin consumo registrado · número=días reales
-function diasClass(d){ if(d==null)return 'nd'; if(d>=9999)return 'sc'; if(d===0)return 'cero'; if(d<30)return 'bajo'; if(d<OPT)return 'med'; return 'ok'; }
-function diasColor(d){ if(d==null)return '#b0b0b0'; if(d>=9999)return '#5b6b7a'; if(d===0)return '#5b2c25'; if(d<30)return '#a93226'; if(d<OPT)return '#b7950b'; return '#27ae60'; }
-function diasLabel(d){ if(d==null)return 'sin existencia'; if(d>=9999)return 'con stock'; return d+' días'; }
-function diasShort(d){ if(d==null)return '—'; if(d>=9999)return '✓'; return d+'d'; }
+function diasClass(d){ if(d==null)return 'nd'; if(d>=9999)return 'ok'; if(d===0)return 'cero'; if(d<30)return 'bajo'; if(d<OPT)return 'med'; return 'ok'; }
+function diasColor(d){ if(d==null)return '#b0b0b0'; if(d>=9999)return '#27ae60'; if(d===0)return '#5b2c25'; if(d<30)return '#a93226'; if(d<OPT)return '#b7950b'; return '#27ae60'; }
+function diasLabel(d){ if(d==null)return 'sin existencia'; if(d>=9999)return '+365 días'; return d+' días'; }
+function diasShort(d){ if(d==null)return '—'; if(d>=9999)return '+365d'; return d+'d'; }
 function scColor(s){ return s<40?'#a93226':s<60?'#b7950b':s<85?'#2874a6':'#1e8449'; }
 
 // ============ BANDA DE PROVINCIAS ============
@@ -259,17 +277,26 @@ function drawProvBand(){
 function pickProv(p){ st.prov=p; document.getElementById('provSel').value=p; st.expand=null; st.skuSel=null; render(); updateMap(); drawProvBand(); }
 
 // ============ MODAL CLASE (ABC-XYZ) ============
-function showClase(cl){
-  const A={A:'Alta rotación — concentra el 80% del consumo. Prioridad máxima de disponibilidad.',B:'Rotación media — siguiente 15% del consumo.',C:'Baja rotación — el 5% restante del consumo.'};
-  const X={X:'Demanda estable y predecible (fácil de planificar).',Y:'Demanda variable (planificación moderada).',Z:'Demanda irregular o esporádica (difícil de prever).'};
-  const a=cl[0], x=cl[1];
+function showClase(sku){
+  const s=D.sku.find(x=>x.sku===sku); if(!s)return;
+  const cl=s.clase, a=cl[0], x=cl[1];
+  const A={A:'Alta rotación',B:'Rotación media',C:'Baja rotación'};
+  const Adesc={A:'concentra parte del 80% superior del consumo nacional',B:'está en el siguiente 15% del consumo',C:'está en el 5% de menor consumo'};
+  const X={X:'Demanda estable',Y:'Demanda variable',Z:'Demanda irregular'};
+  const Xdesc={X:'predecible, fácil de planificar (variación ≤75%)',Y:'planificación moderada (variación 75–150%)',Z:'esporádica o difícil de prever (variación >150% o pocos puntos de consumo)'};
+  const cvPct=Math.round((s.cv||0)*100);
   const html=`<div class="modal-bg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()">
     <div class="modal-h">Clasificación <span class="clase" style="font-size:14px">${cl}</span><span class="modal-x" onclick="closeModal()">✕</span></div>
     <div class="modal-b">
-      <p>La clase combina dos análisis estándar de inventario:</p>
-      <div class="cl-row"><b>${a} — Volumen (ABC)</b><div>${A[a]||'—'}</div></div>
-      <div class="cl-row"><b>${x} — Variabilidad (XYZ)</b><div>${X[x]||'—'}</div></div>
-      <p class="cl-note">Un renglón <b>AX</b> es el más crítico de gestionar bien: mucho consumo y muy predecible, no debe faltar. Un <b>CZ</b> es poco consumo e irregular.</p>
+      <p style="font-weight:600;color:var(--txt)">${s.sum}</p>
+      <p>La clase combina dos análisis estándar de inventario, calculados con el consumo real de este renglón:</p>
+      <div class="cl-row"><b>${a} — ${A[a]} (ABC por volumen)</b>
+        <div>Este renglón ${Adesc[a]}.</div>
+        <div class="cl-data">Consumo mensual nacional: <b>${f(s.consmes)}</b> unidades · representa el <b>${s.pctcons}%</b> del consumo total.</div></div>
+      <div class="cl-row"><b>${x} — ${X[x]} (XYZ por variabilidad)</b>
+        <div>Demanda ${Xdesc[x]}.</div>
+        <div class="cl-data">Variabilidad entre instalaciones: <b>${cvPct}%</b> · se consume en <b>${s.nuec}</b> instalaciones.</div></div>
+      <p class="cl-note"><b>Lectura:</b> un <b>AX</b> es lo más crítico de gestionar (mucho consumo, muy predecible: no debe faltar nunca). Un <b>CZ</b> es de bajo consumo e irregular (se maneja bajo pedido). Este renglón es <b>${cl}</b>.</p>
     </div></div></div>`;
   let m=document.getElementById('modalHost'); if(!m){m=document.createElement('div');m.id='modalHost';document.body.appendChild(m);} m.innerHTML=html;
 }
@@ -310,15 +337,15 @@ function updateMap(){
   // DOS CAPAS DE CALOR que obedecen la MISMA narrativa que los puntos:
   //   verde = bien abastecido (≥90 días)  ·  rojo = desabastecido (pocos días)
   // Se separan por signo para que el color no dependa de la densidad sino del nivel.
-  // Excluir sin-existencia (null) y "con stock sin consumo" (9999) del cálculo térmico:
-  // solo los días reales tiñen el mapa. Los neutros se muestran como punto gris.
-  const conD = pts.filter(p=>p.dias!=null && p.dias<9999);
-  const heatMal = conD.filter(p=>p.dias < OPT).map(p=>{
-    const falta = 1 - Math.min(p.dias,OPT)/OPT;
+  // Días reales y "con stock sin consumo" (9999, equivale a +365d) tiñen el mapa; sin-existencia (null) se excluye.
+  const conD = pts.filter(p=>p.dias!=null);
+  const valOf = d => (d>=9999 ? OPT*1.2 : d);
+  const heatMal = conD.filter(p=>valOf(p.dias) < OPT).map(p=>{
+    const falta = 1 - Math.min(valOf(p.dias),OPT)/OPT;
     return [p.lat,p.lng, Math.max(0.12,falta)];
   });
-  const heatBien = conD.filter(p=>p.dias >= OPT*0.6).map(p=>{
-    const bien = Math.min(1,(p.dias-OPT*0.6)/(OPT*0.4));
+  const heatBien = conD.filter(p=>valOf(p.dias) >= OPT*0.6).map(p=>{
+    const bien = Math.min(1,(valOf(p.dias)-OPT*0.6)/(OPT*0.4));
     return [p.lat,p.lng, Math.max(0.12,bien)];
   });
   if(heatBien.length){
@@ -344,19 +371,19 @@ function updateMap(){
   document.getElementById('mapScopeLbl').textContent = `— ${scope}${st.prov?' · '+st.prov:''}${st.tipo?' · '+st.tipo:''} · ${pts.length} instalaciones`;
 }
 function drawMapStats(pts){
-  const con = pts.filter(p=>p.dias!=null && p.dias<9999); // solo días reales
-  const reales = con.map(p=>p.dias).sort((a,b)=>a-b);
+  const con = pts.filter(p=>p.dias!=null);
+  const reales = con.filter(p=>p.dias<9999).map(p=>p.dias).sort((a,b)=>a-b); // mediana solo con días reales
   const med = reales.length? reales[Math.floor(reales.length/2)] : null;
-  const optn = con.filter(p=>p.dias>=OPT).length;
+  const optn = con.filter(p=>p.dias>=OPT).length; // incluye +365d
   const crit = con.filter(p=>p.dias<30).length;
   const bajo = con.filter(p=>p.dias>=30 && p.dias<OPT).length;
   const cero = con.filter(p=>p.dias===0).length;
   document.getElementById('mapStats').innerHTML=`
     <div class="st"><div class="v" style="color:${diasColor(med)}">${med==null?'-':med}</div><div class="l">Días cobertura (mediana)</div></div>
-    <div class="st"><div class="v" style="color:#1e8449">${optn}</div><div class="l">Instalac. óptimas ≥${OPT}d</div></div>
-    <div class="st"><div class="v" style="color:#b7950b">${bajo}</div><div class="l">Bajo óptimo</div></div>
-    <div class="st"><div class="v" style="color:#a93226">${crit}</div><div class="l">Críticas &lt;30d</div></div>
-    <div class="st"><div class="v" style="color:#5b2c25">${cero}</div><div class="l">En cero</div></div>`;
+    <div class="st"><div class="v" style="color:#1e8449">${optn}</div><div class="l">Óptimas ≥${OPT} días</div></div>
+    <div class="st"><div class="v" style="color:#b7950b">${bajo}</div><div class="l">Bajo óptimo (30–89 d)</div></div>
+    <div class="st"><div class="v" style="color:#a93226">${crit}</div><div class="l">Críticas &lt;30 días</div></div>
+    <div class="st"><div class="v" style="color:#5b2c25">${cero}</div><div class="l">Sin existencia (0 d)</div></div>`;
 }
 
 // ============ TABLA ============
@@ -382,12 +409,12 @@ function render(){
   const tb=document.getElementById('tb');
   tb.innerHTML=rows.slice(0,400).map(s=>{
     let row=`<tr class="med" onclick="toggle('${s.sku}')">
-      <td class="num"><span class="exp-ind">${st.expand===s.sku?'−':'+'}</span></td>
-      <td><div class="medname">${s.sum} <span class="clase" onclick="event.stopPropagation();showClase('${s.clase}')" title="Ver qué significa la clase ${s.clase}">${s.clase}</span></div><div class="medsub">Renglón ${s.sku}${s.grupo!=='—'?' · '+s.grupo:''}</div></td>
-      <td class="num"><span class="dias ${diasClass(s.dias)}">${diasLabel(s.dias)}</span></td>
-      <td class="num" style="color:var(--mut)">${s.su==null?'-':s.su+'%'}</td>
-      <td class="num"><span class="sc" style="color:${scColor(s.salud)}">${s.salud}</span></td>
-      <td class="num">${s._n}</td></tr>`;
+      <td class="c1"><span class="exp-ind">${st.expand===s.sku?'−':'+'}</span></td>
+      <td><div class="medname">${s.sum} <span class="clase" onclick="event.stopPropagation();showClase('${s.sku}')" title="Ver clasificación">${s.clase}</span></div><div class="medsub">Renglón ${s.sku}${s.grupo!=='—'?' · '+s.grupo:''}</div></td>
+      <td class="num cell-dias"><span class="dias ${diasClass(s.dias)}">${diasLabel(s.dias)}</span></td>
+      <td class="num cell-pct" style="color:var(--mut)">${s.su==null?'-':s.su+'%'}</td>
+      <td class="num cell-score"><span class="sc" style="color:${scColor(s.salud)}">${s.salud}</span></td>
+      <td class="num cell-inst">${s._n}</td></tr>`;
     if(st.expand===s.sku) row+=`<tr class="exprow"><td colspan="6"><div class="expinner">${expandHtml(s)}</div></td></tr>`;
     return row;
   }).join('');
