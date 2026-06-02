@@ -57,7 +57,8 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--t
 .map-stats{display:flex;gap:0;border-top:1px solid var(--bd);background:#fafafa;flex-wrap:wrap}
 .map-stats .st{flex:1;min-width:120px;padding:8px 12px;border-right:1px solid var(--bd2);text-align:center}
 .map-stats .st .v{font-family:var(--mono);font-size:20px;font-weight:700}
-.map-stats .st .l{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.map-stats .st .l{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px;margin-top:3px;line-height:1.3}
+.map-stats .st .sub2{display:block;font-size:8.5px;color:#9aa7b2;text-transform:none;letter-spacing:0;font-style:italic;margin-top:1px}
 
 /* FILTROS */
 .filters{background:var(--card);border:1px solid var(--bd);border-top:none;padding:10px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -88,19 +89,22 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
 
 /* ===== MÓVIL: tabla -> tarjetas ===== */
 @media(max-width:680px){
-  thead.main-head{display:none}
-  table,tbody,tr.med,td{display:block;width:100%}
-  tr.med{border-bottom:none;border:1px solid var(--bd2);margin-bottom:6px;padding:8px 10px;position:relative}
-  tr.med td{border:none;padding:2px 0;text-align:left!important}
-  tr.med td.c1{position:absolute;top:8px;right:8px;width:auto}
-  /* etiquetas para celdas numéricas en móvil */
-  tr.med td.cell-dias::before{content:'Días cobertura: ';font-size:10px;color:var(--mut);text-transform:uppercase}
-  tr.med td.cell-pct::before{content:'% Inst.: ';font-size:10px;color:var(--mut);text-transform:uppercase}
-  tr.med td.cell-score::before{content:'Score salud: ';font-size:10px;color:var(--mut);text-transform:uppercase}
-  tr.med td.cell-inst::before{content:'Instalaciones: ';font-size:10px;color:var(--mut);text-transform:uppercase}
-  tr.med td.num{font-family:inherit}
-  tr.med td.num .dias,tr.med td.num .sc{font-family:var(--mono)}
-  tr.exprow td{padding:0}
+  /* solo la tabla principal se vuelve tarjetas */
+  .scroll>table>thead.main-head{display:none}
+  .scroll>table,.scroll>table>tbody,.scroll>table>tbody>tr.med,.scroll>table>tbody>tr.med>td{display:block;width:100%}
+  .scroll>table>tbody>tr.med{border-bottom:none;border:1px solid var(--bd2);margin-bottom:6px;padding:10px 12px 8px;position:relative}
+  .scroll>table>tbody>tr.med>td{border:none;padding:3px 0;text-align:left!important}
+  .scroll>table>tbody>tr.med>td.c1{position:absolute;top:8px;right:10px;width:auto}
+  .scroll>table>tbody>tr.med>td.cell-dias::before{content:'Días de cobertura: ';font-size:10px;color:var(--mut)}
+  .scroll>table>tbody>tr.med>td.cell-pct::before{content:'% institucional: ';font-size:10px;color:var(--mut)}
+  .scroll>table>tbody>tr.med>td.cell-score::before{content:'Score de salud: ';font-size:10px;color:var(--mut)}
+  .scroll>table>tbody>tr.med>td.cell-inst::before{content:'Instalaciones con stock: ';font-size:10px;color:var(--mut)}
+  .scroll>table>tbody>tr.med>td.num{font-family:inherit}
+  .scroll>table>tbody>tr.med>td.num .dias,.scroll>table>tbody>tr.med>td.num .sc{font-family:var(--mono)}
+  .scroll>table>tbody>tr.exprow>td{padding:0;display:block}
+  /* la tabla de detalle se mantiene como tabla, con scroll horizontal si hace falta */
+  .expbody{overflow-x:auto}
+  .dtbl{min-width:520px}
 }
 
 /* badges */
@@ -372,18 +376,18 @@ function updateMap(){
 }
 function drawMapStats(pts){
   const con = pts.filter(p=>p.dias!=null);
-  const reales = con.filter(p=>p.dias<9999).map(p=>p.dias).sort((a,b)=>a-b); // mediana solo con días reales
+  const reales = con.filter(p=>p.dias>0 && p.dias<9999).map(p=>p.dias).sort((a,b)=>a-b); // mediana solo donde hay inventario
   const med = reales.length? reales[Math.floor(reales.length/2)] : null;
-  const optn = con.filter(p=>p.dias>=OPT).length; // incluye +365d
-  const crit = con.filter(p=>p.dias<30).length;
+  const optn = con.filter(p=>p.dias>=OPT).length;
+  const crit = con.filter(p=>p.dias>0 && p.dias<30).length;
   const bajo = con.filter(p=>p.dias>=30 && p.dias<OPT).length;
   const cero = con.filter(p=>p.dias===0).length;
   document.getElementById('mapStats').innerHTML=`
-    <div class="st"><div class="v" style="color:${diasColor(med)}">${med==null?'-':med}</div><div class="l">Días cobertura (mediana)</div></div>
-    <div class="st"><div class="v" style="color:#1e8449">${optn}</div><div class="l">Óptimas ≥${OPT} días</div></div>
-    <div class="st"><div class="v" style="color:#b7950b">${bajo}</div><div class="l">Bajo óptimo (30–89 d)</div></div>
-    <div class="st"><div class="v" style="color:#a93226">${crit}</div><div class="l">Críticas &lt;30 días</div></div>
-    <div class="st"><div class="v" style="color:#5b2c25">${cero}</div><div class="l">Sin existencia (0 d)</div></div>`;
+    <div class="st"><div class="v" style="color:${diasColor(med)}">${med==null?'-':med}</div><div class="l">Días de cobertura<span class="sub2">mediana donde hay stock</span></div></div>
+    <div class="st"><div class="v" style="color:#1e8449">${optn}</div><div class="l">Unidades óptimas<span class="sub2">≥${OPT} días</span></div></div>
+    <div class="st"><div class="v" style="color:#b7950b">${bajo}</div><div class="l">Unidades bajo óptimo<span class="sub2">30 a 89 días</span></div></div>
+    <div class="st"><div class="v" style="color:#a93226">${crit}</div><div class="l">Unidades críticas<span class="sub2">menos de 30 días</span></div></div>
+    <div class="st"><div class="v" style="color:#5b2c25">${cero}</div><div class="l">Unidades sin existencia<span class="sub2">0 días</span></div></div>`;
 }
 
 // ============ TABLA ============
@@ -448,8 +452,8 @@ function expInner(s){
   }
   // ue
   const det=(D.det[s.sku]||[]).filter(d=>d.saldo>0 && (!st.prov||d.prov===st.prov) && (!st.tipo||d.tipo===st.tipo)).sort((a,b)=>b.saldo-a.saldo);
-  return det.length?`<table><thead><tr><th>Unidad Ejecutora</th><th>Tipo</th><th>Provincia</th><th class="num">Existencia</th><th class="num">Días cobertura</th></tr></thead><tbody>
-    ${det.map(d=>`<tr><td>${d.ue}</td><td style="color:var(--mut)">${d.tipo||'—'}</td><td>${d.prov||'—'}</td><td class="num">${f(d.saldo)}</td><td class="num"><span class="dias ${diasClass(d.dias)}" style="min-width:auto;padding:1px 6px">${diasLabel(d.dias)}</span></td></tr>`).join('')}
+  return det.length?`<table class="dtbl"><thead><tr><th style="text-align:left">Unidad Ejecutora</th><th style="text-align:center">Tipo</th><th style="text-align:center">Provincia</th><th style="text-align:right">Existencia</th><th style="text-align:center">Días cobertura</th></tr></thead><tbody>
+    ${det.map(d=>`<tr><td style="text-align:left">${d.ue}</td><td style="text-align:center;color:var(--mut)">${d.tipo||'—'}</td><td style="text-align:center">${d.prov||'—'}</td><td style="text-align:right;font-family:var(--mono)">${f(d.saldo)}</td><td style="text-align:center"><span class="dias ${diasClass(d.dias)}" style="min-width:auto;padding:2px 8px">${diasLabel(d.dias)}</span></td></tr>`).join('')}
     </tbody></table>`:'<p style="color:#a93226;padding:10px">Sin existencia en instalaciones'+(st.prov?' en '+st.prov:'')+(st.tipo?' ('+st.tipo+')':'')+'.</p>';
 }
 
