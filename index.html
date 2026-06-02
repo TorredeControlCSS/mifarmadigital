@@ -112,6 +112,7 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
 /* badges */
 .clase{display:inline-block;background:#37474f;color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px;cursor:help;vertical-align:middle}
 .clase:hover{background:var(--azul2)}
+.desab-tag{display:inline-block;font-family:var(--mono);font-size:9px;color:#a93226;background:#fbeceb;border:1px solid #e8b5ae;border-radius:2px;padding:0 3px;margin-left:4px;font-weight:700}
 
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(20,30,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -206,8 +207,8 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
     <select id="provSel" onchange="onProv(this.value)"><option value="">Todo el país</option></select>
     <select id="tipoSel" onchange="onTipo(this.value)"><option value="">Todo tipo de unidad</option></select>
     <div class="seg" id="impSeg">
-      <button data-imp="" onclick="onImp('')">Todos</button>
-      <button class="on" data-imp="VITAL" onclick="onImp('VITAL')">Prioritarios</button>
+      <button class="on" data-imp="" onclick="onImp('')">Todos</button>
+      <button data-imp="VITAL" onclick="onImp('VITAL')">Prioritarios</button>
     </div>
     <span class="cnt" id="cnt"></span>
   </div>
@@ -239,7 +240,7 @@ const f = n => (n==null?'-':Number(n).toLocaleString('es-PA'));
 let OPT = 90; // óptimo de días; se reasigna desde m.optimo_dias al cargar
 
 // ---- estado ----
-let st = { q:'', prov:'', tipo:'', imp:'VITAL', sort:{k:'salud',d:-1}, expand:null, expTab:'mapa', skuSel:null };
+let st = { q:'', prov:'', tipo:'', imp:'', sort:{k:'salud',d:-1}, expand:null, expTab:'mapa', skuSel:null };
 
 // ---- helpers de días/color ----
 // días: null=sin existencia · 9999=tiene stock pero sin consumo registrado · número=días reales
@@ -366,19 +367,16 @@ function updateMap(){
       gradient:{0.0:'rgba(169,50,38,0)',0.4:'#f4d03f',0.7:'#e67e22',1.0:'#a93226'}}).addTo(map);
   }
   pts.forEach(p=>{
-    if(p.desab){
-      // desabastecida: marcador distintivo (anillo gris hueco) — no es "crítico de cobertura", es "sin existencia"
-      const mk=L.circleMarker([p.lat,p.lng],{radius:6,fillColor:'#ffffff',color:'#7b8a99',weight:2,fillOpacity:1,dashArray:'2'});
-      mk.bindPopup(`<b>${p.ue}</b><br>${p.prov||''}${p.tipo?' · '+p.tipo:''}<br><b style="color:#7b8a99">Sin existencia</b>${st.skuSel?'':`<br>de los renglones de este filtro`}`);
-      markerLayer.addLayer(mk); return;
-    }
+    if(p.desab) return; // las desabastecidas no se dibujan (hacían ruido); se cuentan en las tarjetas y se listan en la tabla
     const col=diasColor(p.dias);
     const mk=L.circleMarker([p.lat,p.lng],{radius:8,fillColor:col,color:'#fff',weight:1.5,fillOpacity:.95});
     mk.bindPopup(`<b>${p.ue}</b><br>${p.prov||''}${p.tipo?' · '+p.tipo:''}<br><b style="color:${col}">${diasLabel(p.dias)}</b>${(p.dias!=null&&p.dias<9999&&p.dias>0)?' de cobertura':''}${st.skuSel?`<br>Existencia: ${f(p.saldo)}`:`<br>${p.n||0} renglones con stock`}`);
     markerLayer.addLayer(mk);
   });
-  if(pts.length){
-    const ll=pts.map(p=>[p.lat,p.lng]);
+  // encuadre: usar solo puntos con stock (los visibles)
+  const vis=pts.filter(p=>!p.desab);
+  if(vis.length){
+    const ll=vis.map(p=>[p.lat,p.lng]);
     try{ map.fitBounds(ll,{padding:[40,40],maxZoom: st.prov?11:9}); }catch(e){}
   }
   drawMapStats(pts);
@@ -404,16 +402,40 @@ function drawMapStats(pts){
 
 // ============ TABLA ============
 function nStock(s){ return (D.det[s.sku]||[]).filter(d=>d.saldo>0 && (!st.prov||d.prov===st.prov) && (!st.tipo||d.tipo===st.tipo)).length; }
+// Métricas del renglón recalculadas según el filtro activo (provincia/tipo).
+// Sin filtro => valores nacionales. Con filtro => solo las U.E. del ámbito.
+function scopedMetrics(s){
+  if(!st.prov && !st.tipo){
+    return {dias:s.dias, su:s.su, salud:s.salud, nstock:nStock(s), desab:0, scoped:false};
+  }
+  const det=(D.det[s.sku]||[]).filter(d=>(!st.prov||d.prov===st.prov)&&(!st.tipo||d.tipo===st.tipo));
+  const conStock=det.filter(d=>d.saldo>0);
+  const desab=det.filter(d=>d.saldo===0).length;
+  if(conStock.length===0){
+    // hay registros del renglón en el ámbito pero todos en 0, o no hay registros
+    return {dias: det.length?0:null, su:det.length?0:null, salud:det.length?0:null, nstock:0, desab, scoped:true, vacio:det.length===0};
+  }
+  // cobertura del ámbito = stock total ÷ demanda diaria total del ámbito
+  let stock=0, demdia=0;
+  conStock.forEach(d=>{ stock+=d.saldo; demdia+=(d.cons||0)/30; });
+  let dias = demdia>0 ? Math.round(stock/demdia) : 9999;
+  if(dias>365) dias=9999; // tope: stock muy alto vs consumo casi nulo => "+365 días"
+  const su = demdia>0 ? Math.round(Math.min(100, stock/(demdia*90)*100)*10)/10 : 100;
+  const salud = dias>=9999?100:(dias>=90?100:Math.round(Math.min(100,dias/90*100)*10)/10);
+  return {dias, su, salud, nstock:conStock.length, desab, scoped:true};
+}
 function filtered(){
   let rows = D.sku.filter(s=> (!st.q||s.sum.toLowerCase().includes(st.q)||s.sku.includes(st.q)) && (!st.imp||s.imp===st.imp) );
-  rows.forEach(s=>{ s._n=nStock(s); });
+  rows.forEach(s=>{ s._m=scopedMetrics(s); s._n=s._m.nstock; });
+  // con filtro de provincia/tipo, ocultar renglones que no existen en el ámbito
+  if(st.prov||st.tipo) rows=rows.filter(s=>!s._m.vacio);
   const k=st.sort.k, d=st.sort.d;
   rows.sort((a,b)=>{
-    // los prioritarios (faro) aparecen primero, como pide el director — sin etiqueta visible
     if(a.faro!==b.faro) return b.faro-a.faro;
     let va,vb;
     if(k==='sum'){va=a.sum;vb=b.sum;return d*va.localeCompare(vb);}
     if(k==='nstock'){va=a._n;vb=b._n;}
+    else if(k==='dias'||k==='su'||k==='salud'){va=a._m[k]==null?-1:a._m[k]; vb=b._m[k]==null?-1:b._m[k];}
     else{va=a[k]==null?-1:a[k]; vb=b[k]==null?-1:b[k];}
     return d*(va-vb);
   });
@@ -421,16 +443,18 @@ function filtered(){
 }
 function render(){
   const rows=filtered();
-  document.getElementById('cnt').textContent=`${Math.min(rows.length,400)} de ${rows.length} medicamentos`;
+  const scopeTxt = (st.prov||st.tipo)?` · ámbito: ${st.prov||''}${st.prov&&st.tipo?' / ':''}${st.tipo||''}`:'';
+  document.getElementById('cnt').textContent=`${Math.min(rows.length,400)} de ${rows.length} medicamentos${scopeTxt}`;
   const tb=document.getElementById('tb');
   tb.innerHTML=rows.slice(0,400).map(s=>{
+    const mt=s._m;
     let row=`<tr class="med" onclick="toggle('${s.sku}')">
       <td class="c1"><span class="exp-ind">${st.expand===s.sku?'−':'+'}</span></td>
-      <td><div class="medname">${s.sum} <span class="clase" onclick="event.stopPropagation();showClase('${s.sku}')" title="Ver clasificación">${s.clase}</span></div><div class="medsub">Renglón ${s.sku}${s.grupo!=='—'?' · '+s.grupo:''}</div></td>
-      <td class="num cell-dias"><span class="dias ${diasClass(s.dias)}">${diasLabel(s.dias)}</span></td>
-      <td class="num cell-pct" style="color:var(--mut)">${s.su==null?'-':s.su+'%'}</td>
-      <td class="num cell-score"><span class="sc" style="color:${scColor(s.salud)}">${s.salud}</span></td>
-      <td class="num cell-inst">${s._n}</td></tr>`;
+      <td><div class="medname">${s.sum} <span class="clase" onclick="event.stopPropagation();showClase('${s.sku}')" title="Ver clasificación">${s.clase}</span></div><div class="medsub">Renglón ${s.sku}${s.grupo!=='—'?' · '+s.grupo:''}${mt.scoped?' · '+(st.prov||st.tipo):''}</div></td>
+      <td class="num cell-dias"><span class="dias ${diasClass(mt.dias)}">${diasLabel(mt.dias)}</span></td>
+      <td class="num cell-pct" style="color:var(--mut)">${mt.su==null?'-':mt.su+'%'}</td>
+      <td class="num cell-score"><span class="sc" style="color:${scColor(mt.salud||0)}">${mt.salud==null?'-':mt.salud}</span></td>
+      <td class="num cell-inst">${mt.nstock}${mt.desab?`<span class="desab-tag" title="${mt.desab} sin existencia">+${mt.desab}⊘</span>`:''}</td></tr>`;
     if(st.expand===s.sku) row+=`<tr class="exprow"><td colspan="6"><div class="expinner">${expandHtml(s)}</div></td></tr>`;
     return row;
   }).join('');
@@ -468,11 +492,16 @@ function expInner(s){
       <div class="comp"><div class="compc"><div class="cl">En bodega central</div><div class="cv" style="color:var(--mut)">${f(s.stockced)}</div><div style="font-size:9px;color:#666">${s.mesesced==null?'-':s.mesesced+' meses'}</div></div>
       <div class="compc"><div class="cl">En instalaciones</div><div class="cv">${f(s.stockue)}</div></div></div>`;
   }
-  // ue
-  const det=(D.det[s.sku]||[]).filter(d=>d.saldo>0 && (!st.prov||d.prov===st.prov) && (!st.tipo||d.tipo===st.tipo)).sort((a,b)=>b.saldo-a.saldo);
-  return det.length?`<table class="dtbl"><thead><tr><th style="text-align:left">Unidad Ejecutora</th><th style="text-align:center">Tipo</th><th style="text-align:center">Provincia</th><th style="text-align:right">Existencia</th><th style="text-align:center">Días cobertura</th></tr></thead><tbody>
-    ${det.map(d=>`<tr><td style="text-align:left">${d.ue}</td><td style="text-align:center;color:var(--mut)">${d.tipo||'—'}</td><td style="text-align:center">${d.prov||'—'}</td><td style="text-align:right;font-family:var(--mono)">${f(d.saldo)}</td><td style="text-align:center"><span class="dias ${diasClass(d.dias)}" style="min-width:auto;padding:2px 8px">${diasLabel(d.dias)}</span></td></tr>`).join('')}
-    </tbody></table>`:'<p style="color:#a93226;padding:10px">Sin existencia en instalaciones'+(st.prov?' en '+st.prov:'')+(st.tipo?' ('+st.tipo+')':'')+'.</p>';
+  // ue — mostrar TODAS las que manejan el renglón: primero con stock (por saldo), luego las desabastecidas
+  const all=(D.det[s.sku]||[]).filter(d=>(!st.prov||d.prov===st.prov)&&(!st.tipo||d.tipo===st.tipo));
+  const conStock=all.filter(d=>d.saldo>0).sort((a,b)=>b.saldo-a.saldo);
+  const sinStock=all.filter(d=>d.saldo===0).sort((a,b)=>a.ue.localeCompare(b.ue));
+  const det=[...conStock,...sinStock];
+  if(!det.length) return '<p style="color:var(--mut);padding:10px">Este renglón no se maneja en'+(st.prov?' '+st.prov:' ninguna unidad')+(st.tipo?' ('+st.tipo+')':'')+'.</p>';
+  const hdr=sinStock.length?`<div class="note" style="margin-bottom:6px">${conStock.length} unidad(es) con existencia · <b style="color:#a93226">${sinStock.length} sin existencia</b> (resaltadas al final).</div>`:'';
+  return hdr+`<table class="dtbl"><thead><tr><th style="text-align:left">Unidad Ejecutora</th><th style="text-align:center">Tipo</th><th style="text-align:center">Provincia</th><th style="text-align:right">Existencia</th><th style="text-align:center">Días cobertura</th></tr></thead><tbody>
+    ${det.map(d=>`<tr${d.saldo===0?' style="background:#fbeceb"':''}><td style="text-align:left">${d.ue}</td><td style="text-align:center;color:var(--mut)">${d.tipo||'—'}</td><td style="text-align:center">${d.prov||'—'}</td><td style="text-align:right;font-family:var(--mono)">${f(d.saldo)}</td><td style="text-align:center"><span class="dias ${diasClass(d.saldo>0?d.dias:0)}" style="min-width:auto;padding:2px 8px">${d.saldo>0?diasLabel(d.dias):'sin existencia'}</span></td></tr>`).join('')}
+    </tbody></table>`;
 }
 
 // ============ FILTROS ============
@@ -482,11 +511,11 @@ function onTipo(v){ st.tipo=v; render(); updateMap(); }
 function onImp(v){ st.imp=v; document.querySelectorAll('#impSeg button').forEach(b=>b.classList.toggle('on',b.dataset.imp===v)); st.expand=null; st.skuSel=null; render(); updateMap(); }
 function sortBy(k){ if(st.sort.k===k)st.sort.d*=-1; else st.sort={k,d:(k==='sum')?1:1}; render(); }
 function resetDash(){
-  st={ q:'', prov:'', tipo:'', imp:'VITAL', sort:{k:'salud',d:-1}, expand:null, expTab:'mapa', skuSel:null };
+  st={ q:'', prov:'', tipo:'', imp:'', sort:{k:'salud',d:-1}, expand:null, expTab:'mapa', skuSel:null };
   document.getElementById('q').value='';
   document.getElementById('provSel').value='';
   document.getElementById('tipoSel').value='';
-  document.querySelectorAll('#impSeg button').forEach(b=>b.classList.toggle('on',b.dataset.imp==='VITAL'));
+  document.querySelectorAll('#impSeg button').forEach(b=>b.classList.toggle('on',b.dataset.imp===''));
   closeModal();
   render(); updateMap(); drawProvBand();
   try{ map.setView([8.7,-80.2],7); }catch(e){}
