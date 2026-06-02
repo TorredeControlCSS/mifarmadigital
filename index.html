@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
+<meta name="theme-color" content="#1a5276"/>
+<title>Disponibilidad de Medicamentos — CSS Panamá</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<link rel="icon" href="favicon.ico"/>
+<style>
+:root{
+  --azul:#1a5276; --azul2:#2874a6; --azul-cl:#d4e6f1;
+  --bg:#ececec; --card:#ffffff; --bd:#a8a8a8; --bd2:#cfcfcf;
+  --txt:#1c2733; --mut:#5b6b7a;
+  --verde:#1e8449; --verde-cl:#d4efdf;
+  --amar:#b7950b; --amar-cl:#fcf3cf;
+  --rojo:#a93226; --rojo-cl:#f5d5d0;
+  --mono:'Consolas','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--txt);font-size:13px;line-height:1.4}
+.wrap{max-width:1400px;margin:0 auto;padding:8px}
+
+/* HEADER */
+.hdr{background:var(--azul);color:#fff;padding:10px 16px;border:1px solid #154360;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hdr h1{font-size:17px;font-weight:700;letter-spacing:.2px}
+.hdr .sub{font-size:11px;color:#bcd6ea;font-family:var(--mono)}
+.hdr .inst-badge{margin-left:auto;font-size:10px;background:#154360;padding:4px 10px;border:1px solid #2874a6;border-radius:2px}
+
+/* INSTALL PWA BTN */
+.install-btn{background:#fff;color:var(--azul);border:none;font-weight:700;font-size:11px;padding:6px 12px;cursor:pointer;border-radius:2px;display:none}
+
+/* MAPA */
+.map-card{background:var(--card);border:1px solid var(--bd);margin-top:8px}
+.map-head{background:#f4f7fa;border-bottom:1px solid var(--bd);padding:7px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.map-head .ttl{font-weight:700;font-size:13px;color:var(--azul)}
+.map-head .lg{font-size:10px;color:var(--mut);display:flex;align-items:center;gap:4px;margin-left:6px}
+.map-head .lg .dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid #00000022}
+#map{height:340px;width:100%;background:#aadaff;z-index:1}
+.map-stats{display:flex;gap:0;border-top:1px solid var(--bd);background:#fafafa;flex-wrap:wrap}
+.map-stats .st{flex:1;min-width:120px;padding:8px 12px;border-right:1px solid var(--bd2);text-align:center}
+.map-stats .st .v{font-family:var(--mono);font-size:20px;font-weight:700}
+.map-stats .st .l{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+/* FILTROS */
+.filters{background:var(--card);border:1px solid var(--bd);border-top:none;padding:10px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.filters input,.filters select{font-family:'Segoe UI',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--bd);border-radius:2px;background:#fff}
+.filters input{flex:1;min-width:200px}
+.filters .cnt{font-size:11px;color:var(--mut);font-family:var(--mono)}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:2px;overflow:hidden}
+.seg button{border:none;background:#fff;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;color:var(--mut);border-right:1px solid var(--bd2)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--azul);color:#fff}
+
+/* TABLA */
+.tbl-card{background:var(--card);border:1px solid var(--bd);border-top:none;margin-bottom:8px}
+.scroll{max-height:62vh;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{position:sticky;top:0;background:var(--azul);color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:8px 8px;text-align:left;cursor:pointer;white-space:nowrap;z-index:2}
+thead th.nosort{cursor:default}
+thead th.num{text-align:right}
+tbody td{padding:7px 8px;border-bottom:1px solid #eee;vertical-align:middle}
+tbody td.num{text-align:right;font-family:var(--mono)}
+tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
+.medname{font-weight:600;font-size:12.5px}
+.medsub{font-size:10px;color:var(--mut);font-family:var(--mono)}
+.exp-ind{font-family:var(--mono);font-weight:700;color:var(--azul2)}
+
+/* badges */
+.clase{display:inline-block;background:#37474f;color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px}
+.imp{font-size:10px;font-weight:700}
+.imp.v{color:var(--rojo)}.imp.e{color:var(--amar)}.imp.s{color:#999}
+.faro{font-size:9px;background:var(--amar-cl);color:var(--amar);border:1px solid var(--amar);padding:1px 5px;border-radius:2px;font-weight:700;margin-left:4px}
+
+/* dias chip */
+.dias{font-family:var(--mono);font-weight:700;padding:3px 8px;border-radius:2px;font-size:12px;display:inline-block;min-width:54px;text-align:center}
+.dias.ok{background:var(--verde-cl);color:var(--verde)}
+.dias.med{background:var(--amar-cl);color:var(--amar)}
+.dias.bajo{background:var(--rojo-cl);color:var(--rojo)}
+.dias.cero{background:#5b2c25;color:#fff}
+
+/* score chip */
+.sc{font-family:var(--mono);font-weight:700;font-size:13px}
+
+/* expand row */
+.exprow td{background:#f4f7fa;border-left:3px solid var(--azul2);padding:0}
+.expinner{padding:10px}
+.exptabs{display:flex;gap:2px;margin-bottom:8px;flex-wrap:wrap}
+.exptab{padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;background:#e4e9ee;border:1px solid var(--bd2);color:var(--mut)}
+.exptab.on{background:#fff;color:var(--azul);border-bottom-color:#fff}
+.expbody table{font-size:11px}
+.expbody thead th{position:static;background:#37474f}
+.note{background:var(--azul-cl);border:1px solid #aacbe2;padding:8px 11px;font-size:11px;margin-bottom:8px;border-radius:2px}
+.note.amar{background:var(--amar-cl);border-color:#e8d48a}
+.comp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:8px}
+.compc{background:#fff;border:1px solid var(--bd2);padding:8px;text-align:center}
+.compc .cl{font-size:9px;color:var(--mut);text-transform:uppercase}
+.compc .cv{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:3px}
+.formula{font-family:var(--mono);font-size:10px;background:#2b3a48;color:#d6e9f5;padding:7px 9px;border-radius:2px;margin:6px 0;white-space:pre-wrap;line-height:1.5}
+
+/* leaflet marker labels */
+.inst-lbl{font-family:var(--mono);font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000;pointer-events:none}
+
+@media(max-width:640px){
+  #map{height:260px}
+  .hdr h1{font-size:14px}
+  .map-stats .st .v{font-size:16px}
+  thead th,tbody td{padding:6px 5px;font-size:11px}
+  .filters input{min-width:140px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <img id="logoCss" src="icons/logo-css.png" alt="CSS" style="height:42px;width:auto;display:none" onload="this.style.display='block'" onerror="this.style.display='none'"/>
+    <div>
+      <h1>Disponibilidad de Medicamentos</h1>
+      <div class="sub" id="hsub">Caja de Seguro Social · Panamá</div>
+    </div>
+    <button class="install-btn" id="installBtn">📲 Instalar app</button>
+    <div class="inst-badge" id="instBadge">—</div>
+  </div>
+
+  <!-- MAPA TERMOGRÁFICO -->
+  <div class="map-card">
+    <div class="map-head">
+      <span class="ttl">🗺️ Termografía de abastecimiento</span>
+      <span id="mapScopeLbl" style="font-size:11px;color:var(--mut);font-style:italic"></span>
+      <div style="flex:1"></div>
+      <span style="font-size:10px;color:var(--mut);margin-right:2px">Nivel de abastecimiento:</span>
+      <span class="lg"><span class="dot" style="background:#a93226"></span>Crítico &lt;30d</span>
+      <span class="lg"><span class="dot" style="background:#b7950b"></span>Bajo &lt;90d</span>
+      <span class="lg"><span class="dot" style="background:#27ae60"></span>Óptimo ≥90d</span>
+    </div>
+    <div id="map"></div>
+    <div class="map-stats" id="mapStats"></div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filters">
+    <input type="text" id="q" placeholder="🔍 Buscar medicamento (ej. amlodipina)…" oninput="onSearch(this.value)"/>
+    <select id="provSel" onchange="onProv(this.value)"><option value="">Toda provincia</option></select>
+    <div class="seg" id="impSeg">
+      <button class="on" data-imp="" onclick="onImp('')">Todos</button>
+      <button data-imp="VITAL" onclick="onImp('VITAL')">🔴 Vitales</button>
+      <button data-imp="ESENCIAL" onclick="onImp('ESENCIAL')">🟠 Esenciales</button>
+    </div>
+    <span class="cnt" id="cnt"></span>
+  </div>
+
+  <!-- TABLA -->
+  <div class="tbl-card">
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th class="nosort"></th>
+          <th onclick="sortBy('sum')">Medicamento</th>
+          <th class="nosort">Clase</th>
+          <th class="num" onclick="sortBy('dias')">Días cobertura</th>
+          <th class="num" onclick="sortBy('su')">% Inst.</th>
+          <th class="num" onclick="sortBy('salud')">Score salud</th>
+          <th class="num" onclick="sortBy('nstock')">Instalac.</th>
+        </tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+</script>
+<script>
+let D, m;  // se cargan desde data.json
+const f = n => (n==null?'-':Number(n).toLocaleString('es-PA'));
+const OPT = m.optimo_dias; // 90
+
+// ---- estado ----
+let st = { q:'', prov:'', imp:'', sort:{k:'dias',d:1}, expand:null, expTab:'mapa', skuSel:null };
+
+// ---- helpers de días/color ----
+function diasClass(d){ if(d==null)return 'med'; if(d===0)return 'cero'; if(d<30)return 'bajo'; if(d<OPT)return 'med'; return 'ok'; }
+function diasColor(d){ if(d==null)return '#999'; if(d===0)return '#5b2c25'; if(d<30)return '#a93226'; if(d<OPT)return '#b7950b'; return '#27ae60'; }
+function diasLabel(d){ if(d==null)return 's/d'; return d+' d'; }
+function scColor(s){ return s<40?'#a93226':s<60?'#b7950b':s<85?'#2874a6':'#1e8449'; }
+const impTag={'VITAL':['🔴 Vital','v'],'ESENCIAL':['🟠 Esencial','e'],'SIN CLASIF':['—','s']};
+
+// ============ MAPA ============
+let map, heatLayer, heatGood, markerLayer;
+function initMap(){
+  map = L.map('map',{zoomControl:true,scrollWheelZoom:false}).setView([8.7,-80.2],7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+  updateMap();
+}
+// Devuelve [{ue,lat,lng,prov,dias,extra}] según el alcance actual (renglón seleccionado o agregado nacional)
+function mapPoints(){
+  const pts=[];
+  if(st.skuSel){
+    // vista de UN renglón: días de cobertura por instalación
+    const det = D.det[st.skuSel]||[];
+    det.forEach(d=>{ if(d.lat!=null && (!st.prov||d.prov===st.prov)) pts.push({ue:d.ue,lat:d.lat,lng:d.lng,prov:d.prov,dias:d.dias,saldo:d.saldo}); });
+  } else {
+    // vista agregada: mediana de días por instalación entre los renglones del filtro de importancia
+    const skus = D.sku.filter(s=>!st.imp||s.imp===st.imp).map(s=>s.sku);
+    const skuSet=new Set(skus);
+    const agg={};
+    for(const sku of skus){ (D.det[sku]||[]).forEach(d=>{ if(d.lat==null)return; if(st.prov&&d.prov!==st.prov)return;
+      if(!agg[d.ue])agg[d.ue]={ue:d.ue,lat:d.lat,lng:d.lng,prov:d.prov,arr:[]};
+      if(d.dias!=null)agg[d.ue].arr.push(d.dias); }); }
+    Object.values(agg).forEach(o=>{ const a=o.arr.slice().sort((x,y)=>x-y); const med=a.length?(a.length%2?a[(a.length-1)/2]:Math.round((a[a.length/2-1]+a[a.length/2])/2)):null;
+      pts.push({ue:o.ue,lat:o.lat,lng:o.lng,prov:o.prov,dias:med,n:o.arr.length}); });
+  }
+  return pts;
+}
+function updateMap(){
+  const pts = mapPoints();
+  markerLayer.clearLayers();
+  if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
+  if(heatGood){ map.removeLayer(heatGood); heatGood=null; }
+  // DOS CAPAS DE CALOR que obedecen la MISMA narrativa que los puntos:
+  //   verde = bien abastecido (≥90 días)  ·  rojo = desabastecido (pocos días)
+  // Se separan por signo para que el color no dependa de la densidad sino del nivel.
+  const conD = pts.filter(p=>p.dias!=null);
+  // Cada instalación aporta a UNA escala continua: rojo (0d) → amarillo (~45d) → verde (≥90d).
+  // Para que el heatmap (que suma densidad) no engañe, separamos en dos capas por nivel:
+  // las que están BAJO el óptimo tiñen de rojo/ámbar; las que están EN óptimo tiñen de verde.
+  const heatMal = conD.filter(p=>p.dias < OPT).map(p=>{
+    const falta = 1 - Math.min(p.dias,OPT)/OPT; // 0d->1 (rojo fuerte), 89d->~0
+    return [p.lat,p.lng, Math.max(0.12,falta)];
+  });
+  const heatBien = conD.filter(p=>p.dias >= OPT*0.6).map(p=>{
+    const bien = Math.min(1,(p.dias-OPT*0.6)/(OPT*0.4)); // 54d->0, 90d->1
+    return [p.lat,p.lng, Math.max(0.12,bien)];
+  });
+  // verde primero (debajo), rojo encima para que la alerta resalte donde de verdad falta
+  if(heatBien.length){
+    heatGood = L.heatLayer(heatBien,{radius:40,blur:30,maxZoom:11,minOpacity:.25,max:1.0,
+      gradient:{0.0:'rgba(39,174,96,0)',0.4:'#7dcea0',0.7:'#52be80',1.0:'#1e8449'}}).addTo(map);
+  }
+  if(heatMal.length){
+    heatLayer = L.heatLayer(heatMal,{radius:40,blur:30,maxZoom:11,minOpacity:.30,max:1.0,
+      gradient:{0.0:'rgba(169,50,38,0)',0.4:'#f4d03f',0.7:'#e67e22',1.0:'#a93226'}}).addTo(map);
+  }
+  // puntos por instalación (misma escala de color)
+  pts.forEach(p=>{
+    const col=diasColor(p.dias);
+    const mk=L.circleMarker([p.lat,p.lng],{radius:8,fillColor:col,color:'#fff',weight:1.5,fillOpacity:.95});
+    const diasTxt = p.dias==null?'sin dato':p.dias+' días';
+    mk.bindPopup(`<b>${p.ue}</b><br>${p.prov||''}<br><b style="color:${col}">${diasTxt}</b> de cobertura${st.skuSel?`<br>Existencia: ${f(p.saldo)}`:`<br>${p.n||0} renglones`}`);
+    markerLayer.addLayer(mk);
+  });
+  if(pts.length){
+    const ll=pts.map(p=>[p.lat,p.lng]);
+    try{ map.fitBounds(ll,{padding:[40,40],maxZoom: st.prov?11:9}); }catch(e){}
+  }
+  drawMapStats(pts);
+  const scope = st.skuSel ? `Renglón: ${(D.sku.find(s=>s.sku===st.skuSel)||{}).sum||''}` : (st.imp?`${impTag[st.imp][0]}`:'Todos los medicamentos');
+  document.getElementById('mapScopeLbl').textContent = `— ${scope}${st.prov?' · '+st.prov:''} · ${pts.length} instalaciones`;
+}
+function drawMapStats(pts){
+  const con = pts.filter(p=>p.dias!=null);
+  const med = con.length? Math.round(con.map(p=>p.dias).sort((a,b)=>a-b)[Math.floor(con.length/2)]):null;
+  const optn = con.filter(p=>p.dias>=OPT).length;
+  const crit = con.filter(p=>p.dias<30).length;
+  const cero = con.filter(p=>p.dias===0).length;
+  document.getElementById('mapStats').innerHTML=`
+    <div class="st"><div class="v" style="color:${diasColor(med)}">${med==null?'-':med}</div><div class="l">Días cobertura (mediana)</div></div>
+    <div class="st"><div class="v" style="color:#1e8449">${optn}</div><div class="l">Instalac. óptimas ≥${OPT}d</div></div>
+    <div class="st"><div class="v" style="color:#b7950b">${con.length-optn-crit}</div><div class="l">Bajo óptimo</div></div>
+    <div class="st"><div class="v" style="color:#a93226">${crit}</div><div class="l">Críticas &lt;30d</div></div>
+    <div class="st"><div class="v" style="color:#5b2c25">${cero}</div><div class="l">En cero</div></div>`;
+}
+
+// ============ TABLA ============
+function nStock(s){ return (D.det[s.sku]||[]).filter(d=>d.saldo>0 && (!st.prov||d.prov===st.prov)).length; }
+function filtered(){
+  let rows = D.sku.filter(s=> (!st.q||s.sum.toLowerCase().includes(st.q)||s.sku.includes(st.q)) && (!st.imp||s.imp===st.imp) );
+  rows.forEach(s=>{ s._n=nStock(s); });
+  const k=st.sort.k, d=st.sort.d;
+  rows.sort((a,b)=>{
+    // faro (vitales) primero siempre, salvo orden explícito por otra col
+    let va,vb;
+    if(k==='sum'){va=a.sum;vb=b.sum;return d*va.localeCompare(vb);}
+    if(k==='nstock'){va=a._n;vb=b._n;}
+    else{va=a[k]==null?-1:a[k]; vb=b[k]==null?-1:b[k];}
+    return d*(va-vb);
+  });
+  return rows;
+}
+function render(){
+  const rows=filtered();
+  document.getElementById('cnt').textContent=`${Math.min(rows.length,400)} de ${rows.length} medicamentos`;
+  const tb=document.getElementById('tb');
+  tb.innerHTML=rows.slice(0,400).map(s=>{
+    const it=impTag[s.imp]||impTag['SIN CLASIF'];
+    const faro = s.imp==='VITAL'?'<span class="faro">FARO</span>':'';
+    let row=`<tr class="med" onclick="toggle('${s.sku}')">
+      <td class="num"><span class="exp-ind">${st.expand===s.sku?'−':'+'}</span></td>
+      <td><div class="medname">${s.sum}${faro}</div><div class="medsub">SKU ${s.sku} · ${s.grupo!=='—'?s.grupo:''}</div></td>
+      <td><span class="clase">${s.clase}</span></td>
+      <td class="num"><span class="dias ${diasClass(s.dias)}">${diasLabel(s.dias)}</span></td>
+      <td class="num" style="color:var(--mut)">${s.su==null?'-':s.su+'%'}</td>
+      <td class="num"><span class="sc" style="color:${scColor(s.salud)}">${s.salud}</span></td>
+      <td class="num">${s._n}</td></tr>`;
+    if(st.expand===s.sku) row+=`<tr class="exprow"><td colspan="7"><div class="expinner">${expandHtml(s)}</div></td></tr>`;
+    return row;
+  }).join('');
+}
+function toggle(sku){
+  if(st.expand===sku){ st.expand=null; st.skuSel=null; }
+  else { st.expand=sku; st.skuSel=sku; st.expTab='mapa'; }
+  render(); updateMap();
+}
+
+// ============ EXPAND (sub-pestañas, sin modal) ============
+function expandHtml(s){
+  const tabs=[['mapa','Mapa de este renglón'],['ue','Dónde hay existencia'],['calc','¿Cómo se calculan los valores?'],['cedis','En bodega central']];
+  return `<div class="exptabs">${tabs.map(t=>`<span class="exptab ${st.expTab===t[0]?'on':''}" onclick="event.stopPropagation();st.expTab='${t[0]}';render();">${t[1]}</span>`).join('')}</div>
+    <div class="expbody" onclick="event.stopPropagation()">${expInner(s)}</div>`;
+}
+function expInner(s){
+  if(st.expTab==='mapa'){
+    return `<div class="note">El mapa de arriba ahora muestra <b>${s.sum}</b>: cada instalación coloreada por sus días de cobertura de este renglón. Use el filtro de provincia para acercarse a una zona.</div>
+      <div class="comp">
+        <div class="compc"><div class="cl">Días cobertura (nacional)</div><div class="cv" style="color:${diasColor(s.dias)}">${diasLabel(s.dias)}</div></div>
+        <div class="compc"><div class="cl">Score salud</div><div class="cv" style="color:${scColor(s.salud)}">${s.salud}</div></div>
+        <div class="compc"><div class="cl">% institucional</div><div class="cv" style="color:var(--mut)">${s.su==null?'-':s.su+'%'}</div></div>
+        <div class="compc"><div class="cl">Instalaciones con stock</div><div class="cv">${nStock(s)}</div></div></div>`;
+  }
+  if(st.expTab==='calc') return explicaCalc(s);
+  if(st.expTab==='cedis'){
+    return `<div class="note amar">El inventario en bodega central (CEDIS) <b>no</b> cuenta para los días de cobertura del paciente: aún no ha llegado a las instalaciones. Aquí está como referencia de lo que está en camino.</div>
+      <div class="comp"><div class="compc"><div class="cl">En bodega central</div><div class="cv" style="color:var(--mut)">${f(s.stockced)}</div><div style="font-size:9px;color:#666">${s.mesesced==null?'-':s.mesesced+' meses'}</div></div>
+      <div class="compc"><div class="cl">En instalaciones</div><div class="cv">${f(s.stockue)}</div></div></div>`;
+  }
+  // ue
+  const det=(D.det[s.sku]||[]).filter(d=>d.saldo>0 && (!st.prov||d.prov===st.prov)).sort((a,b)=>b.saldo-a.saldo);
+  return det.length?`<table><thead><tr><th>Unidad Ejecutora</th><th>Provincia</th><th class="num">Existencia</th><th class="num">Días</th></tr></thead><tbody>
+    ${det.map(d=>`<tr><td>${d.ue}</td><td>${d.prov||'—'}</td><td class="num">${f(d.saldo)}</td><td class="num"><span class="dias ${diasClass(d.dias)}" style="min-width:auto;padding:1px 6px">${diasLabel(d.dias)}</span></td></tr>`).join('')}
+    </tbody></table>`:'<p style="color:#a93226;padding:10px">Sin existencia en instalaciones'+(st.prov?' en '+st.prov:'')+'.</p>';
+}
+function explicaCalc(s){
+  const necesita90=Math.round((s.demdia||0)*OPT);
+  const stockUE=s.stockue;
+  const ratio = s.demdia>0?(stockUE/(necesita90||1)):0;
+  const pct = s.su==null?'-':s.su;
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="background:#faf2ef;border:1px solid #cda69e;padding:10px">
+      <h4 style="color:#9a4310;font-size:12px">① % Institucional (Mi Farma Digital) = ${pct}${pct==='-'?'':'%'}</h4>
+      <div class="formula">% = mín(100, existencia ÷ (consumo diario × 90 días) × 100)
+días de cobertura = % × 90 ÷ 100</div>
+      <ul style="font-size:11px;margin-left:16px;line-height:1.6">
+        <li>Existencia en instalaciones: <b>${f(stockUE)}</b></li>
+        <li>Consumo diario: <b>${f(s.demdia||0)}</b> → a 90 días necesita <b>${f(necesita90)}</b></li>
+        <li>${f(stockUE)} ÷ ${f(necesita90)} = <b>${ratio.toFixed(2)}</b> → ${pct}${pct==='-'?'':'%'} (tope 100%)</li>
+        <li style="color:#9a4310"><b>Clave (corrección del director):</b> ese ${pct}${pct==='-'?'':'%'} NO es "${pct}% de medicamentos buenos". Significa que el inventario <b>dura el ${pct}% de los 90 días = <span style="color:${diasColor(s.dias)}">${diasLabel(s.dias)}</span></b>.</li>
+      </ul>
+    </div>
+    <div style="background:#eef4fa;border:1px solid #a8c4dd;padding:10px">
+      <h4 style="color:var(--azul);font-size:12px">② Score de salud = ${s.salud} · ${diasLabel(s.dias)} de cobertura</h4>
+      <div class="formula">El óptimo es ≥ 90 días (3 meses).
+&lt;30d crítico · 30–89d bajo · ≥90d óptimo</div>
+      <ul style="font-size:11px;margin-left:16px;line-height:1.6">
+        <li>Mismo dato base que ellos (existencia en instalaciones), por eso los números coinciden.</li>
+        <li>Lo expresamos en <b>días</b> como pidió el director: <b style="color:${diasColor(s.dias)}">${diasLabel(s.dias)}</b>.</li>
+        <li>${s.dias!=null&&s.dias<OPT?`Está <b>por debajo</b> del óptimo de ${OPT} días → hay que reforzar el pedido.`:`Está en o por encima del óptimo de ${OPT} días.`}</li>
+        <li><b>Diagnóstico:</b> ${s.diag==='COMPRA'?'COMPRAR (no hay en ningún lado)':s.diag==='DESPACHO'?'DESPACHAR (hay en CEDIS, falta enviar)':s.diag==='REDISTRIB'?'REDISTRIBUIR (mal repartido)':'ADECUADO'}</li>
+      </ul>
+    </div></div>
+    <div class="note" style="margin-top:8px">En una frase: el director quiere ver <b>días</b>, no un % confuso. ${pct}${pct==='-'?'':'%'} de cobertura "para 3 meses" = <b>${diasLabel(s.dias)}</b> reales. El óptimo es llegar a 90 días pidiendo para ~5 meses, de modo que nunca se baje del piso.</div>`;
+}
+
+// ============ FILTROS ============
+function onSearch(v){ st.q=v.toLowerCase(); st.expand=null; st.skuSel=null; render(); updateMap(); }
+function onProv(v){ st.prov=v; render(); updateMap(); }
+function onImp(v){ st.imp=v; document.querySelectorAll('#impSeg button').forEach(b=>b.classList.toggle('on',b.dataset.imp===v)); st.expand=null; st.skuSel=null; render(); updateMap(); }
+function sortBy(k){ if(st.sort.k===k)st.sort.d*=-1; else st.sort={k,d:(k==='sum')?1:1}; render(); }
+
+// ============ INIT ============
+function boot(){
+  document.getElementById('hsub').textContent=`Caja de Seguro Social · Panamá · ${m.n_sku} medicamentos · corte ${m.fecha}`;
+  document.getElementById('instBadge').textContent=`${m.n_sku} medicamentos · ${Object.keys(D.inst).length} instalaciones mapeadas`;
+  const ps=document.getElementById('provSel');
+  D.provincias.forEach(p=>{ const o=document.createElement('option');o.value=p;o.textContent=p;ps.appendChild(o); });
+  initMap(); render();
+}
+// ---- carga de datos externa ----
+fetch('data.json').then(r=>r.json()).then(json=>{ D=json; m=D.meta; boot(); })
+  .catch(e=>{ document.getElementById('tb').innerHTML='<tr><td colspan=7 style="padding:20px;color:#a93226">No se pudo cargar data.json. Verifique que esté junto al index.html.</td></tr>'; console.error(e); });
+
+// ============ PWA ============
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; document.getElementById('installBtn').style.display='inline-block'; });
+document.getElementById('installBtn').addEventListener('click',async()=>{ if(deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; document.getElementById('installBtn').style.display='none'; } });
+// service worker externo (cache offline)
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW:',e)); });
+}
+</script>
+</body>
+</html>
