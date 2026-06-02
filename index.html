@@ -177,7 +177,7 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
 <script>
 let D, m;  // se cargan desde data.json
 const f = n => (n==null?'-':Number(n).toLocaleString('es-PA'));
-const OPT = m.optimo_dias; // 90
+let OPT = 90; // óptimo de días; se reasigna desde m.optimo_dias al cargar
 
 // ---- estado ----
 let st = { q:'', prov:'', imp:'', sort:{k:'dias',d:1}, expand:null, expTab:'mapa', skuSel:null };
@@ -383,6 +383,7 @@ function sortBy(k){ if(st.sort.k===k)st.sort.d*=-1; else st.sort={k,d:(k==='sum'
 
 // ============ INIT ============
 function boot(){
+  OPT = m.optimo_dias || 90;
   document.getElementById('hsub').textContent=`Caja de Seguro Social · Panamá · ${m.n_sku} medicamentos · corte ${m.fecha}`;
   document.getElementById('instBadge').textContent=`${m.n_sku} medicamentos · ${Object.keys(D.inst).length} instalaciones mapeadas`;
   const ps=document.getElementById('provSel');
