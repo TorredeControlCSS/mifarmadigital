@@ -106,7 +106,7 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
   .scroll>table>tbody>tr.exprow>td{padding:0;display:block}
   /* la tabla de detalle se mantiene como tabla, con scroll horizontal si hace falta */
   .expbody{overflow-x:auto}
-  .dtbl{min-width:520px}
+  .dtbl{min-width:620px}
 }
 
 /* badges */
@@ -135,7 +135,8 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
 .dias.ok{background:var(--verde-cl);color:var(--verde)}
 .dias.med{background:var(--amar-cl);color:var(--amar)}
 .dias.bajo{background:var(--rojo-cl);color:var(--rojo)}
-.dias.cero{background:#5b2c25;color:#fff}
+.dias.cero{background:#a93226;color:#fff}
+.dias.desab{background:#fff;color:#7b3f37;border:1px dashed #b06a5f;font-style:italic;font-weight:600}
 .dias.sc{background:#eceff1;color:#5b6b7a;font-style:italic;font-weight:600}
 .dias.nd{background:#f4f4f4;color:#aaa}
 
@@ -379,10 +380,27 @@ function updateMap(){
     const ll=vis.map(p=>[p.lat,p.lng]);
     try{ map.fitBounds(ll,{padding:[40,40],maxZoom: st.prov?11:9}); }catch(e){}
   }
-  drawMapStats(pts);
+  drawMapStats(statsUnits());
   const scope = st.skuSel ? `Renglón: ${(D.sku.find(s=>s.sku===st.skuSel)||{}).sum||''}` : (st.imp?`${st.imp==='VITAL'?'Prioritarios':'Esenciales'}`:'Todos los medicamentos');
-  const conStockN = pts.filter(p=>!p.desab).length, desabN = pts.filter(p=>p.desab).length;
+  const su=statsUnits(); const conStockN=su.filter(p=>!p.desab).length, desabN=su.filter(p=>p.desab).length;
   document.getElementById('mapScopeLbl').textContent = `— ${scope}${st.prov?' · '+st.prov:''}${st.tipo?' · '+st.tipo:''} · ${conStockN} U.E. con stock${desabN?` · ${desabN} sin existencia`:''}`;
+}
+// Universo para las TARJETAS: todas las U.E. del ámbito (mapeadas o no), para que cuadre con la tabla.
+function statsUnits(){
+  if(st.skuSel){
+    return (D.det[st.skuSel]||[]).filter(d=>(!st.prov||d.prov===st.prov)&&(!st.tipo||d.tipo===st.tipo))
+      .map(d=>({dias:d.saldo>0?d.dias:0, desab:d.saldo===0}));
+  }
+  const skus = D.sku.filter(s=>!st.imp||s.imp===st.imp).map(s=>s.sku);
+  const agg={};
+  for(const sku of skus){ (D.det[sku]||[]).forEach(d=>{ if(st.prov&&d.prov!==st.prov)return; if(st.tipo&&d.tipo!==st.tipo)return;
+    if(!agg[d.ue])agg[d.ue]={arr:[],conStock:0};
+    if(d.saldo>0){ agg[d.ue].conStock++; if(d.dias!=null) agg[d.ue].arr.push(d.dias); } }); }
+  return Object.values(agg).map(o=>{
+    const reales=o.arr.filter(x=>x>0&&x<9999).sort((x,y)=>x-y);
+    const med=o.conStock===0?0:(reales.length?reales[Math.floor(reales.length/2)]:9999);
+    return {dias:med, desab:o.conStock===0};
+  });
 }
 function drawMapStats(pts){
   const conStock = pts.filter(p=>!p.desab && p.dias!=null);   // base: unidades con stock
@@ -498,9 +516,21 @@ function expInner(s){
   const sinStock=all.filter(d=>d.saldo===0).sort((a,b)=>a.ue.localeCompare(b.ue));
   const det=[...conStock,...sinStock];
   if(!det.length) return '<p style="color:var(--mut);padding:10px">Este renglón no se maneja en'+(st.prov?' '+st.prov:' ninguna unidad')+(st.tipo?' ('+st.tipo+')':'')+'.</p>';
-  const hdr=sinStock.length?`<div class="note" style="margin-bottom:6px">${conStock.length} unidad(es) con existencia · <b style="color:#a93226">${sinStock.length} sin existencia</b> (resaltadas al final).</div>`:'';
-  return hdr+`<table class="dtbl"><thead><tr><th style="text-align:left">Unidad Ejecutora</th><th style="text-align:center">Tipo</th><th style="text-align:center">Provincia</th><th style="text-align:right">Existencia</th><th style="text-align:center">Días cobertura</th></tr></thead><tbody>
-    ${det.map(d=>`<tr${d.saldo===0?' style="background:#fbeceb"':''}><td style="text-align:left">${d.ue}</td><td style="text-align:center;color:var(--mut)">${d.tipo||'—'}</td><td style="text-align:center">${d.prov||'—'}</td><td style="text-align:right;font-family:var(--mono)">${f(d.saldo)}</td><td style="text-align:center"><span class="dias ${diasClass(d.saldo>0?d.dias:0)}" style="min-width:auto;padding:2px 8px">${d.saldo>0?diasLabel(d.dias):'sin existencia'}</span></td></tr>`).join('')}
+  const hdr=sinStock.length?`<div class="note" style="margin-bottom:6px">${conStock.length} unidad(es) con existencia · <b style="color:#a93226">${sinStock.length} sin existencia</b> (resaltadas al final). El consumo mensual da el marco de referencia: días = existencia ÷ (consumo ÷ 30).</div>`:`<div class="note" style="margin-bottom:6px">Días de cobertura = existencia ÷ consumo diario. El consumo mensual se muestra como referencia del cálculo.</div>`;
+  return hdr+`<table class="dtbl"><thead><tr><th style="text-align:left">Unidad Ejecutora</th><th style="text-align:center">Tipo</th><th style="text-align:center">Provincia</th><th style="text-align:right">Existencia</th><th style="text-align:right">Consumo/mes</th><th style="text-align:center">Días cobertura</th></tr></thead><tbody>
+    ${det.map(d=>{
+      const sinEx = d.saldo===0;
+      const cero = !sinEx && (d.dias===0);
+      const etq = sinEx ? 'sin existencia' : diasLabel(d.dias);
+      const cls = sinEx ? 'desab' : diasClass(d.dias);
+      return `<tr${sinEx?' style="background:#fbeceb"':(cero?' style="background:#fff4f0"':'')}>
+        <td style="text-align:left">${d.ue}</td>
+        <td style="text-align:center;color:var(--mut)">${d.tipo||'—'}</td>
+        <td style="text-align:center">${d.prov||'—'}</td>
+        <td style="text-align:right;font-family:var(--mono)">${f(d.saldo)}</td>
+        <td style="text-align:right;font-family:var(--mono);color:var(--mut)">${d.cons?f(d.cons):'—'}</td>
+        <td style="text-align:center"><span class="dias ${cls}" style="min-width:auto;padding:2px 8px">${etq}</span></td></tr>`;
+    }).join('')}
     </tbody></table>`;
 }
 
