@@ -1,6 +1,6 @@
 // Service Worker — Disponibilidad de Medicamentos CSS
 // Cache-first para funcionamiento offline tras la primera carga.
-const CACHE = 'medicamentos-css-v7';
+const CACHE = 'medicamentos-css-v8';
 const ASSETS = [
   './',
   './index.html',
