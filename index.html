@@ -46,6 +46,8 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--t
 /* INSTALL PWA BTN */
 .install-btn{background:#16a085;color:#fff;border:none;font-weight:700;font-size:11px;padding:7px 14px;cursor:pointer;border-radius:3px;display:none;white-space:nowrap}
 .install-btn:hover{background:#138a72}
+.reset-btn{background:#fff;color:var(--azul);border:1px solid #fff;font-weight:700;font-size:11px;padding:7px 12px;cursor:pointer;border-radius:3px;white-space:nowrap}
+.reset-btn:hover{background:#eaf3fb}
 
 /* MAPA */
 .map-card{background:var(--card);border:1px solid var(--bd);margin-top:8px}
@@ -176,6 +178,7 @@ tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
       <div class="sub" id="hsub">Caja de Seguro Social · Panamá</div>
     </div>
     <div class="inst-badge" id="instBadge">—</div>
+    <button class="reset-btn" id="resetBtn" onclick="resetDash()" title="Volver a la vista país completo">↻ Reiniciar</button>
     <button class="install-btn" id="installBtn">⤓ Instalar app</button>
   </div>
 
@@ -317,19 +320,24 @@ function initMap(){
 // Devuelve [{ue,lat,lng,prov,dias,extra}] según el alcance actual (renglón seleccionado o agregado nacional)
 function mapPoints(){
   const pts=[];
-  const tipoOk = d => (!st.tipo || d.tipo===st.tipo);
   if(st.skuSel){
     const det = D.det[st.skuSel]||[];
-    det.forEach(d=>{ if(d.lat!=null && (!st.prov||d.prov===st.prov) && tipoOk(d)) pts.push({ue:d.ue,lat:d.lat,lng:d.lng,prov:d.prov,dias:d.dias,saldo:d.saldo,tipo:d.tipo}); });
+    det.forEach(d=>{ if(d.lat==null) return; if(st.prov&&d.prov!==st.prov) return; if(st.tipo&&d.tipo!==st.tipo) return;
+      // base = saldo>0. Las de saldo 0 se marcan desabastecidas (no entran al gradiente de cobertura).
+      pts.push({ue:d.ue,lat:d.lat,lng:d.lng,prov:d.prov,tipo:d.tipo,saldo:d.saldo,
+        dias:d.saldo>0?d.dias:0, desab:d.saldo===0}); });
   } else {
     const skus = D.sku.filter(s=>!st.imp||s.imp===st.imp).map(s=>s.sku);
     const agg={};
     for(const sku of skus){ (D.det[sku]||[]).forEach(d=>{ if(d.lat==null)return; if(st.prov&&d.prov!==st.prov)return; if(st.tipo&&d.tipo!==st.tipo)return;
-      if(!agg[d.ue])agg[d.ue]={ue:d.ue,lat:d.lat,lng:d.lng,prov:d.prov,tipo:d.tipo,arr:[]};
-      // contar solo días reales (excluir sin-existencia null y abastecido-sin-consumo 9999 para la mediana)
-      if(d.dias!=null && d.dias<9999) agg[d.ue].arr.push(d.dias); }); }
-    Object.values(agg).forEach(o=>{ const a=o.arr.slice().sort((x,y)=>x-y); const med=a.length?(a.length%2?a[(a.length-1)/2]:Math.round((a[a.length/2-1]+a[a.length/2])/2)):null;
-      pts.push({ue:o.ue,lat:o.lat,lng:o.lng,prov:o.prov,tipo:o.tipo,dias:med,n:o.arr.length}); });
+      if(!agg[d.ue])agg[d.ue]={ue:d.ue,lat:d.lat,lng:d.lng,prov:d.prov,tipo:d.tipo,arr:[],conStock:0,sinStock:0};
+      if(d.saldo>0){ agg[d.ue].conStock++; if(d.dias!=null) agg[d.ue].arr.push(d.dias); }
+      else agg[d.ue].sinStock++; }); }
+    Object.values(agg).forEach(o=>{
+      // mediana de días reales (>0, <9999) donde hay stock
+      const reales=o.arr.filter(x=>x>0&&x<9999).sort((x,y)=>x-y);
+      const med = o.conStock===0 ? 0 : (reales.length? reales[Math.floor(reales.length/2)] : 9999);
+      pts.push({ue:o.ue,lat:o.lat,lng:o.lng,prov:o.prov,tipo:o.tipo,dias:med,n:o.conStock,desab:o.conStock===0}); });
   }
   return pts;
 }
@@ -338,17 +346,14 @@ function updateMap(){
   markerLayer.clearLayers();
   if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
   if(heatGood){ map.removeLayer(heatGood); heatGood=null; }
-  // DOS CAPAS DE CALOR que obedecen la MISMA narrativa que los puntos:
-  //   verde = bien abastecido (≥90 días)  ·  rojo = desabastecido (pocos días)
-  // Se separan por signo para que el color no dependa de la densidad sino del nivel.
-  // Días reales y "con stock sin consumo" (9999, equivale a +365d) tiñen el mapa; sin-existencia (null) se excluye.
-  const conD = pts.filter(p=>p.dias!=null);
+  // El gradiente térmico solo usa unidades CON STOCK (base = saldo>0). Las desabastecidas no tiñen.
+  const conStock = pts.filter(p=>!p.desab && p.dias!=null);
   const valOf = d => (d>=9999 ? OPT*1.2 : d);
-  const heatMal = conD.filter(p=>valOf(p.dias) < OPT).map(p=>{
+  const heatMal = conStock.filter(p=>valOf(p.dias) < OPT).map(p=>{
     const falta = 1 - Math.min(valOf(p.dias),OPT)/OPT;
     return [p.lat,p.lng, Math.max(0.12,falta)];
   });
-  const heatBien = conD.filter(p=>valOf(p.dias) >= OPT*0.6).map(p=>{
+  const heatBien = conStock.filter(p=>valOf(p.dias) >= OPT*0.6).map(p=>{
     const bien = Math.min(1,(valOf(p.dias)-OPT*0.6)/(OPT*0.4));
     return [p.lat,p.lng, Math.max(0.12,bien)];
   });
@@ -361,9 +366,15 @@ function updateMap(){
       gradient:{0.0:'rgba(169,50,38,0)',0.4:'#f4d03f',0.7:'#e67e22',1.0:'#a93226'}}).addTo(map);
   }
   pts.forEach(p=>{
+    if(p.desab){
+      // desabastecida: marcador distintivo (anillo gris hueco) — no es "crítico de cobertura", es "sin existencia"
+      const mk=L.circleMarker([p.lat,p.lng],{radius:6,fillColor:'#ffffff',color:'#7b8a99',weight:2,fillOpacity:1,dashArray:'2'});
+      mk.bindPopup(`<b>${p.ue}</b><br>${p.prov||''}${p.tipo?' · '+p.tipo:''}<br><b style="color:#7b8a99">Sin existencia</b>${st.skuSel?'':`<br>de los renglones de este filtro`}`);
+      markerLayer.addLayer(mk); return;
+    }
     const col=diasColor(p.dias);
     const mk=L.circleMarker([p.lat,p.lng],{radius:8,fillColor:col,color:'#fff',weight:1.5,fillOpacity:.95});
-    mk.bindPopup(`<b>${p.ue}</b><br>${p.prov||''}${p.tipo?' · '+p.tipo:''}<br><b style="color:${col}">${diasLabel(p.dias)}</b>${(p.dias!=null&&p.dias<9999)?' de cobertura':''}${st.skuSel?`<br>Existencia: ${f(p.saldo)}`:`<br>${p.n||0} renglones con consumo`}`);
+    mk.bindPopup(`<b>${p.ue}</b><br>${p.prov||''}${p.tipo?' · '+p.tipo:''}<br><b style="color:${col}">${diasLabel(p.dias)}</b>${(p.dias!=null&&p.dias<9999&&p.dias>0)?' de cobertura':''}${st.skuSel?`<br>Existencia: ${f(p.saldo)}`:`<br>${p.n||0} renglones con stock`}`);
     markerLayer.addLayer(mk);
   });
   if(pts.length){
@@ -372,22 +383,23 @@ function updateMap(){
   }
   drawMapStats(pts);
   const scope = st.skuSel ? `Renglón: ${(D.sku.find(s=>s.sku===st.skuSel)||{}).sum||''}` : (st.imp?`${st.imp==='VITAL'?'Prioritarios':'Esenciales'}`:'Todos los medicamentos');
-  document.getElementById('mapScopeLbl').textContent = `— ${scope}${st.prov?' · '+st.prov:''}${st.tipo?' · '+st.tipo:''} · ${pts.length} instalaciones`;
+  const conStockN = pts.filter(p=>!p.desab).length, desabN = pts.filter(p=>p.desab).length;
+  document.getElementById('mapScopeLbl').textContent = `— ${scope}${st.prov?' · '+st.prov:''}${st.tipo?' · '+st.tipo:''} · ${conStockN} U.E. con stock${desabN?` · ${desabN} sin existencia`:''}`;
 }
 function drawMapStats(pts){
-  const con = pts.filter(p=>p.dias!=null);
-  const reales = con.filter(p=>p.dias>0 && p.dias<9999).map(p=>p.dias).sort((a,b)=>a-b); // mediana solo donde hay inventario
+  const conStock = pts.filter(p=>!p.desab && p.dias!=null);   // base: unidades con stock
+  const desab = pts.filter(p=>p.desab).length;                 // desabastecidas (saldo 0)
+  const reales = conStock.filter(p=>p.dias>0 && p.dias<9999).map(p=>p.dias).sort((a,b)=>a-b);
   const med = reales.length? reales[Math.floor(reales.length/2)] : null;
-  const optn = con.filter(p=>p.dias>=OPT).length;
-  const crit = con.filter(p=>p.dias>0 && p.dias<30).length;
-  const bajo = con.filter(p=>p.dias>=30 && p.dias<OPT).length;
-  const cero = con.filter(p=>p.dias===0).length;
+  const optn = conStock.filter(p=>p.dias>=OPT).length;         // incluye +365
+  const bajo = conStock.filter(p=>p.dias>=30 && p.dias<OPT).length;
+  const crit = conStock.filter(p=>p.dias>0 && p.dias<30).length;
   document.getElementById('mapStats').innerHTML=`
     <div class="st"><div class="v" style="color:${diasColor(med)}">${med==null?'-':med}</div><div class="l">Días de cobertura<span class="sub2">mediana donde hay stock</span></div></div>
-    <div class="st"><div class="v" style="color:#1e8449">${optn}</div><div class="l">Unidades óptimas<span class="sub2">≥${OPT} días</span></div></div>
-    <div class="st"><div class="v" style="color:#b7950b">${bajo}</div><div class="l">Unidades bajo óptimo<span class="sub2">30 a 89 días</span></div></div>
-    <div class="st"><div class="v" style="color:#a93226">${crit}</div><div class="l">Unidades críticas<span class="sub2">menos de 30 días</span></div></div>
-    <div class="st"><div class="v" style="color:#5b2c25">${cero}</div><div class="l">Unidades sin existencia<span class="sub2">0 días</span></div></div>`;
+    <div class="st"><div class="v" style="color:#1e8449">${optn}</div><div class="l">U. ejecutoras óptimas<span class="sub2">≥${OPT} días</span></div></div>
+    <div class="st"><div class="v" style="color:#b7950b">${bajo}</div><div class="l">U. ejecutoras bajo óptimo<span class="sub2">30 a 89 días</span></div></div>
+    <div class="st"><div class="v" style="color:#a93226">${crit}</div><div class="l">U. ejecutoras críticas<span class="sub2">menos de 30 días</span></div></div>
+    <div class="st"><div class="v" style="color:#5b6b7a">${desab}</div><div class="l">U. ejecutoras sin existencia<span class="sub2">saldo en cero</span></div></div>`;
 }
 
 // ============ TABLA ============
@@ -435,14 +447,20 @@ function expandHtml(s){
   return `<div class="exptabs">${tabs.map(t=>`<span class="exptab ${st.expTab===t[0]?'on':''}" onclick="event.stopPropagation();st.expTab='${t[0]}';render();">${t[1]}</span>`).join('')}</div>
     <div class="expbody" onclick="event.stopPropagation()">${expInner(s)}</div>`;
 }
+function medStock(sku){
+  const reales=(D.det[sku]||[]).filter(d=>d.saldo>0 && d.dias!=null && d.dias>0 && d.dias<9999 && (!st.prov||d.prov===st.prov) && (!st.tipo||d.tipo===st.tipo)).map(d=>d.dias).sort((a,b)=>a-b);
+  return reales.length? reales[Math.floor(reales.length/2)] : null;
+}
 function expInner(s){
   if(st.expTab==='mapa'){
-    return `<div class="note">El mapa de arriba ahora muestra <b>${s.sum}</b>: cada instalación coloreada por sus días de cobertura de este renglón. Use el filtro de provincia para acercarse a una zona.</div>
+    const ms=medStock(s.sku);
+    const desab=(D.det[s.sku]||[]).filter(d=>d.saldo===0 && (!st.prov||d.prov===st.prov) && (!st.tipo||d.tipo===st.tipo)).length;
+    return `<div class="note">El mapa de arriba muestra <b>${s.sum}</b>: cada unidad ejecutora con existencia, coloreada por sus días de cobertura. Las que están sin existencia aparecen como punto hueco gris.</div>
       <div class="comp">
-        <div class="compc"><div class="cl">Días cobertura (nacional)</div><div class="cv" style="color:${diasColor(s.dias)}">${diasLabel(s.dias)}</div></div>
-        <div class="compc"><div class="cl">Score salud</div><div class="cv" style="color:${scColor(s.salud)}">${s.salud}</div></div>
-        <div class="compc"><div class="cl">% institucional</div><div class="cv" style="color:var(--mut)">${s.su==null?'-':s.su+'%'}</div></div>
-        <div class="compc"><div class="cl">Instalaciones con stock</div><div class="cv">${nStock(s)}</div></div></div>`;
+        <div class="compc"><div class="cl">Cobertura nacional</div><div class="cv" style="color:${diasColor(s.dias)}">${diasLabel(s.dias)}</div><div style="font-size:9px;color:#888">stock total ÷ demanda total</div></div>
+        <div class="compc"><div class="cl">Mediana donde hay stock</div><div class="cv" style="color:${diasColor(ms)}">${ms==null?'—':ms+' d'}</div><div style="font-size:9px;color:#888">U.E. con existencia</div></div>
+        <div class="compc"><div class="cl">U.E. con existencia</div><div class="cv">${nStock(s)}</div></div>
+        <div class="compc"><div class="cl">U.E. sin existencia</div><div class="cv" style="color:#5b6b7a">${desab}</div></div></div>`;
   }
 
   if(st.expTab==='cedis'){
@@ -463,6 +481,17 @@ function onProv(v){ st.prov=v; render(); updateMap(); drawProvBand(); }
 function onTipo(v){ st.tipo=v; render(); updateMap(); }
 function onImp(v){ st.imp=v; document.querySelectorAll('#impSeg button').forEach(b=>b.classList.toggle('on',b.dataset.imp===v)); st.expand=null; st.skuSel=null; render(); updateMap(); }
 function sortBy(k){ if(st.sort.k===k)st.sort.d*=-1; else st.sort={k,d:(k==='sum')?1:1}; render(); }
+function resetDash(){
+  st={ q:'', prov:'', tipo:'', imp:'VITAL', sort:{k:'salud',d:-1}, expand:null, expTab:'mapa', skuSel:null };
+  document.getElementById('q').value='';
+  document.getElementById('provSel').value='';
+  document.getElementById('tipoSel').value='';
+  document.querySelectorAll('#impSeg button').forEach(b=>b.classList.toggle('on',b.dataset.imp==='VITAL'));
+  closeModal();
+  render(); updateMap(); drawProvBand();
+  try{ map.setView([8.7,-80.2],7); }catch(e){}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 // ============ INIT ============
 function boot(){
