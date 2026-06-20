@@ -139,30 +139,32 @@
 <script>
 let D=null, map=null, markers=[], userPos=null, selected=null;
 
-// Endpoint del Web App (GAS sirve el JSON desde caché). Pega aquí la URL .../exec
-// Si queda vacío o falla, cae al data.json estático de GitHub Pages.
+// Vía principal: data.json servido por GitHub Pages (CDN, aguanta tráfico nacional).
+// Fallback: endpoint GAS (Web App). Pega aquí la URL .../exec si quieres respaldo en vivo.
 const API_URL='';
 
 function norm(s){return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();}
 function haversine(a,b,c,d){const R=6371,r=Math.PI/180;const dla=(c-a)*r,dlo=(d-b)*r;const x=Math.sin(dla/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dlo/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 
-// JSONP al endpoint GAS (evita CORS), con timeout. Cae a data.json de GitHub.
+// 1) data.json del CDN (GitHub Pages). 2) si falla, endpoint GAS por JSONP.
 function cargarData(){
   return new Promise((resolve,reject)=>{
-    if(!API_URL){ return fetchLocal(resolve,reject); }
-    const cb='__mfd_'+Date.now();
-    const sc=document.createElement('script');
-    let done=false;
-    const to=setTimeout(()=>{ if(!done){done=true;cleanup();fetchLocal(resolve,reject);} },8000);
-    function cleanup(){ clearTimeout(to); delete window[cb]; if(sc.parentNode)sc.parentNode.removeChild(sc); }
-    window[cb]=(j)=>{ if(done)return; done=true; cleanup(); (j&&j.sku)?resolve(j):fetchLocal(resolve,reject); };
-    sc.onerror=()=>{ if(!done){done=true;cleanup();fetchLocal(resolve,reject);} };
-    sc.src=API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'action=getData&callback='+cb;
-    document.body.appendChild(sc);
+    fetch('data.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;return r.json();})
+      .then(j=>(j&&j.sku)?resolve(j):viaGAS(resolve,reject))
+      .catch(()=>viaGAS(resolve,reject));
   });
 }
-function fetchLocal(resolve,reject){
-  fetch('data.json').then(r=>r.json()).then(j=>resolve(j)).catch(e=>reject(e));
+function viaGAS(resolve,reject){
+  if(!API_URL){ return reject(new Error('sin datos')); }
+  const cb='__mfd_'+Date.now();
+  const sc=document.createElement('script');
+  let done=false;
+  const to=setTimeout(()=>{ if(!done){done=true;cleanup();reject(new Error('timeout'));} },8000);
+  function cleanup(){ clearTimeout(to); delete window[cb]; if(sc.parentNode)sc.parentNode.removeChild(sc); }
+  window[cb]=(j)=>{ if(done)return; done=true; cleanup(); (j&&j.sku)?resolve(j):reject(new Error('vacío')); };
+  sc.onerror=()=>{ if(!done){done=true;cleanup();reject(new Error('error'));} };
+  sc.src=API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'action=getData&callback='+cb;
+  document.body.appendChild(sc);
 }
 
 cargarData().then(j=>{D=j;boot();})
