@@ -1,580 +1,287 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
-<meta name="theme-color" content="#1a5276"/>
-<title>Disponibilidad de Medicamentos — CSS Panamá</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Farma Digital — Caja de Seguro Social</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
-<link rel="manifest" href="manifest.webmanifest"/>
-<link rel="apple-touch-icon" href="icons/icon-192.png"/>
-<link rel="icon" href="favicon.ico"/>
 <style>
-:root{
-  --azul:#1a5276; --azul2:#2874a6; --azul-cl:#d4e6f1;
-  --bg:#ececec; --card:#ffffff; --bd:#a8a8a8; --bd2:#cfcfcf;
-  --txt:#1c2733; --mut:#5b6b7a;
-  --verde:#1e8449; --verde-cl:#d4efdf;
-  --amar:#b7950b; --amar-cl:#fcf3cf;
-  --rojo:#a93226; --rojo-cl:#f5d5d0;
-  --mono:'Consolas','Courier New',monospace;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--txt);font-size:13px;line-height:1.4}
-.wrap{max-width:1400px;margin:0 auto;padding:8px}
-
-/* HEADER */
-.hdr{background:var(--azul);color:#fff;padding:10px 16px;border:1px solid #154360;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.hdr h1{font-size:17px;font-weight:700;letter-spacing:.2px}
-.hdr .sub{font-size:11px;color:#bcd6ea;font-family:var(--mono)}
-.hdr .inst-badge{margin-left:auto;font-size:10px;background:#154360;padding:4px 10px;border:1px solid #2874a6;border-radius:2px}
-#logoCss{height:46px;width:46px;border-radius:50%;background:#fff;padding:2px;object-fit:contain;flex-shrink:0}
-
-/* BANDA DE PROVINCIAS */
-.prov-band{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:6px;margin-top:8px}
-.prov-card{background:var(--card);border:1px solid var(--bd);border-top:3px solid var(--bd);padding:8px 10px;cursor:pointer;transition:background .12s}
-.prov-card:hover{background:#f0f6fb}
-.prov-card.on{background:#eaf3fb;border-top-color:var(--azul)}
-.prov-card .pn{font-size:11px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.prov-card .pd{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:3px}
-.prov-card .pl{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
-.prov-card .pbar{height:4px;background:#e4e4e4;border-radius:2px;margin-top:5px;overflow:hidden}
-.prov-card .pbar i{display:block;height:100%}
-
-/* INSTALL PWA BTN */
-.install-btn{background:#16a085;color:#fff;border:none;font-weight:700;font-size:11px;padding:7px 14px;cursor:pointer;border-radius:3px;display:none;white-space:nowrap}
-.install-btn:hover{background:#138a72}
-.reset-btn{background:#fff;color:var(--azul);border:1px solid #fff;font-weight:700;font-size:11px;padding:7px 12px;cursor:pointer;border-radius:3px;white-space:nowrap}
-.reset-btn:hover{background:#eaf3fb}
-
-/* MAPA */
-.map-card{background:var(--card);border:1px solid var(--bd);margin-top:8px}
-.map-head{background:#f4f7fa;border-bottom:1px solid var(--bd);padding:7px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.map-head .ttl{font-weight:700;font-size:13px;color:var(--azul)}
-.map-head .lg{font-size:10px;color:var(--mut);display:flex;align-items:center;gap:4px;margin-left:6px}
-.map-head .lg .dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid #00000022}
-#map{height:340px;width:100%;background:#aadaff;z-index:1}
-.map-stats{display:flex;gap:0;border-top:1px solid var(--bd);background:#fafafa;flex-wrap:wrap}
-.map-stats .st{flex:1;min-width:120px;padding:8px 12px;border-right:1px solid var(--bd2);text-align:center}
-.map-stats .st .v{font-family:var(--mono);font-size:20px;font-weight:700}
-.map-stats .st .l{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px;margin-top:3px;line-height:1.3}
-.map-stats .st .sub2{display:block;font-size:8.5px;color:#9aa7b2;text-transform:none;letter-spacing:0;font-style:italic;margin-top:1px}
-
-/* FILTROS */
-.filters{background:var(--card);border:1px solid var(--bd);border-top:none;padding:10px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.filters input,.filters select{font-family:'Segoe UI',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--bd);border-radius:2px;background:#fff}
-.filters input{flex:1;min-width:200px}
-.filters .cnt{font-size:11px;color:var(--mut);font-family:var(--mono)}
-.seg{display:inline-flex;border:1px solid var(--bd);border-radius:2px;overflow:hidden}
-.seg button{border:none;background:#fff;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;color:var(--mut);border-right:1px solid var(--bd2)}
-.seg button:last-child{border-right:none}
-.seg button.on{background:var(--azul);color:#fff}
-
-/* TABLA */
-.tbl-card{background:var(--card);border:1px solid var(--bd);border-top:none;margin-bottom:8px}
-.scroll{max-height:62vh;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-thead th{position:sticky;top:0;background:var(--azul);color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;text-align:left;cursor:pointer;white-space:nowrap;z-index:2}
-thead th.nosort{cursor:default}
-thead th.num{text-align:right}
-/* col 1 (+), col 2 nombre (libre), col 3 días, col 4 %inst, col 5 score, col 6 instalac */
-col.c-exp{width:34px} col.c-dias{width:120px} col.c-pct{width:72px} col.c-score{width:90px} col.c-inst{width:86px}
-tbody td{padding:8px 10px;border-bottom:1px solid #eee;vertical-align:middle}
-tbody td.num{text-align:right;font-family:var(--mono)}
-tbody td.c1{text-align:center}
-tbody tr.med:hover{background:#f0f6fb;cursor:pointer}
-.medname{font-weight:600;font-size:12.5px;line-height:1.3}
-.medsub{font-size:10px;color:var(--mut);font-family:var(--mono);margin-top:2px}
-.exp-ind{font-family:var(--mono);font-weight:700;color:var(--azul2);font-size:15px}
-
-/* ===== MÓVIL: tabla -> tarjetas ===== */
-@media(max-width:680px){
-  /* solo la tabla principal se vuelve tarjetas */
-  .scroll>table>thead.main-head{display:none}
-  .scroll>table,.scroll>table>tbody,.scroll>table>tbody>tr.med,.scroll>table>tbody>tr.med>td{display:block;width:100%}
-  .scroll>table>tbody>tr.med{border-bottom:none;border:1px solid var(--bd2);margin-bottom:6px;padding:10px 12px 8px;position:relative}
-  .scroll>table>tbody>tr.med>td{border:none;padding:3px 0;text-align:left!important}
-  .scroll>table>tbody>tr.med>td.c1{position:absolute;top:8px;right:10px;width:auto}
-  .scroll>table>tbody>tr.med>td.cell-dias::before{content:'Días de cobertura: ';font-size:10px;color:var(--mut)}
-  .scroll>table>tbody>tr.med>td.cell-pct::before{content:'% institucional: ';font-size:10px;color:var(--mut)}
-  .scroll>table>tbody>tr.med>td.cell-score::before{content:'Score de salud: ';font-size:10px;color:var(--mut)}
-  .scroll>table>tbody>tr.med>td.cell-inst::before{content:'Instalaciones con stock: ';font-size:10px;color:var(--mut)}
-  .scroll>table>tbody>tr.med>td.num{font-family:inherit}
-  .scroll>table>tbody>tr.med>td.num .dias,.scroll>table>tbody>tr.med>td.num .sc{font-family:var(--mono)}
-  .scroll>table>tbody>tr.exprow>td{padding:0;display:block}
-  /* la tabla de detalle se mantiene como tabla, con scroll horizontal si hace falta */
-  .expbody{overflow-x:auto}
-  .dtbl{min-width:620px}
-}
-
-/* badges */
-.clase{display:inline-block;background:#37474f;color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px;cursor:help;vertical-align:middle}
-.clase:hover{background:var(--azul2)}
-.desab-tag{display:inline-block;font-family:var(--mono);font-size:9px;color:#a93226;background:#fbeceb;border:1px solid #e8b5ae;border-radius:2px;padding:0 3px;margin-left:4px;font-weight:700}
-
-/* MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(20,30,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:#fff;border:1px solid var(--bd);max-width:440px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.3)}
-.modal-h{background:var(--azul);color:#fff;padding:10px 14px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
-.modal-x{margin-left:auto;cursor:pointer;font-size:15px;opacity:.85}
-.modal-x:hover{opacity:1}
-.modal-b{padding:14px;font-size:12.5px;line-height:1.5}
-.modal-b p{margin-bottom:8px}
-.cl-row{background:#f4f7fa;border-left:3px solid var(--azul2);padding:7px 10px;margin-bottom:7px}
-.cl-row b{color:var(--azul)}
-.cl-row div{font-size:12px;color:var(--txt);margin-top:2px}
-.cl-data{font-family:var(--mono);font-size:11px;color:var(--azul);background:#fff;border:1px solid var(--bd2);padding:4px 7px;margin-top:5px!important;border-radius:2px}
-.cl-note{background:var(--azul-cl);border:1px solid #aacbe2;padding:8px 10px;font-size:11.5px;border-radius:2px}
-.imp{font-size:10px;font-weight:700}
-.imp.v{color:var(--rojo)}.imp.e{color:var(--amar)}.imp.s{color:#999}
-
-/* dias chip */
-.dias{font-family:var(--mono);font-weight:700;padding:3px 8px;border-radius:2px;font-size:12px;display:inline-block;min-width:54px;text-align:center}
-.dias.ok{background:var(--verde-cl);color:var(--verde)}
-.dias.med{background:var(--amar-cl);color:var(--amar)}
-.dias.bajo{background:var(--rojo-cl);color:var(--rojo)}
-.dias.cero{background:#a93226;color:#fff}
-.dias.desab{background:#fff;color:#7b3f37;border:1px dashed #b06a5f;font-style:italic;font-weight:600}
-.dias.sc{background:#eceff1;color:#5b6b7a;font-style:italic;font-weight:600}
-.dias.nd{background:#f4f4f4;color:#aaa}
-
-/* score chip */
-.sc{font-family:var(--mono);font-weight:700;font-size:13px}
-
-/* expand row */
-.exprow td{background:#f4f7fa;border-left:3px solid var(--azul2);padding:0}
-.expinner{padding:10px}
-.exptabs{display:flex;gap:2px;margin-bottom:8px;flex-wrap:wrap}
-.exptab{padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;background:#e4e9ee;border:1px solid var(--bd2);color:var(--mut)}
-.exptab.on{background:#fff;color:var(--azul);border-bottom-color:#fff}
-.expbody table{font-size:11px}
-.expbody thead th{position:static;background:#37474f}
-.note{background:var(--azul-cl);border:1px solid #aacbe2;padding:8px 11px;font-size:11px;margin-bottom:8px;border-radius:2px}
-.note.amar{background:var(--amar-cl);border-color:#e8d48a}
-.comp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:8px}
-.compc{background:#fff;border:1px solid var(--bd2);padding:8px;text-align:center}
-.compc .cl{font-size:9px;color:var(--mut);text-transform:uppercase}
-.compc .cv{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:3px}
-.formula{font-family:var(--mono);font-size:10px;background:#2b3a48;color:#d6e9f5;padding:7px 9px;border-radius:2px;margin:6px 0;white-space:pre-wrap;line-height:1.5}
-
-/* leaflet marker labels */
-.inst-lbl{font-family:var(--mono);font-size:10px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000;pointer-events:none}
-
-@media(max-width:640px){
-  #map{height:260px}
-  .hdr h1{font-size:14px}
-  .map-stats .st .v{font-size:16px}
-  thead th,tbody td{padding:6px 5px;font-size:11px}
-  .filters input{min-width:140px}
-}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:#ececec;color:#222;line-height:1.5}
+  .num{font-family:Consolas,'Courier New',monospace}
+  a{color:inherit}
+  /* Header */
+  header{background:#0C447C;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .logo{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:#0C447C;font-weight:700;font-size:11px}
+  .brand .sub{color:#9fc4ec;font-size:11px;letter-spacing:.4px}
+  .brand .ttl{color:#fff;font-size:18px;font-weight:600}
+  .hdr-right{color:#9fc4ec;font-size:12px}
+  /* Layout */
+  .wrap{max-width:1100px;margin:0 auto;padding:20px}
+  .hero{text-align:center;margin:8px 0 18px}
+  .hero h1{font-size:22px;color:#0C447C;font-weight:600}
+  .hero p{font-size:14px;color:#555;margin-top:4px}
+  /* Search */
+  .searchbar{display:flex;gap:8px;margin:14px 0 10px}
+  .searchbox{flex:1;display:flex;align-items:center;background:#fff;border:1px solid #1e5a9e;border-radius:8px;padding:0 14px;height:48px}
+  .searchbox input{border:none;outline:none;flex:1;font-size:16px;margin-left:10px;background:transparent}
+  .btn{background:#1e5a9e;color:#fff;border:none;border-radius:8px;padding:0 20px;font-size:15px;font-weight:600;cursor:pointer;height:48px}
+  .btn:hover{background:#174a85}
+  .btn-ghost{background:#fff;border:1px solid #1e5a9e;color:#1e5a9e;border-radius:8px;padding:0 16px;font-weight:600;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;height:48px}
+  .btn-ghost:hover{background:#f0f6fc}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .filters select{padding:8px 12px;border:1px solid #a8a8a8;border-radius:6px;background:#fff;font-size:13px;color:#333}
+  /* Metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
+  .mcard{border-radius:10px;padding:14px 16px}
+  .mcard .big{font-size:30px;font-weight:700;line-height:1}
+  .mcard .lbl{font-size:12px;margin-top:6px}
+  .m-blue{background:#0C447C;color:#fff}
+  .m-blue .lbl{color:#9fc4ec}
+  .m-white{background:#fff;border:1px solid #a8a8a8}
+  .m-white .big{color:#1d9e75}
+  .m-white .lbl{color:#555}
+  .m-amber{background:#fff;border:1px solid #d89a1a}
+  .m-amber .big{color:#ba7517}
+  .m-amber .lbl{color:#555}
+  /* Selected med header */
+  .medhead{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1e5a9e;padding-bottom:8px;margin:14px 0 12px;flex-wrap:wrap;gap:8px}
+  .medhead .name{font-size:16px;font-weight:600;color:#0C447C}
+  .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:600;padding:4px 10px;border-radius:14px}
+  .t-lom{background:#e6f1fb;color:#0C447C}
+  .t-vital{background:#e1f5ee;color:#0f6e56}
+  .t-cat{background:#f1efe8;color:#444}
+  .t-nolom{background:#faeee0;color:#a05a12}
+  /* Map */
+  #map{height:300px;border:1px solid #a8a8a8;border-radius:8px;margin-bottom:6px}
+  .legend{display:flex;gap:14px;font-size:11px;color:#666;margin-bottom:14px;flex-wrap:wrap}
+  .legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
+  /* Result cards */
+  .scope{font-size:13px;color:#666;margin-bottom:10px}
+  .results{display:flex;flex-direction:column;gap:9px}
+  .rcard{background:#fff;border:1px solid #a8a8a8;border-radius:6px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .rcard .info .nm{font-size:14px;font-weight:600}
+  .rcard .info .meta{font-size:12px;color:#666;margin-top:3px}
+  .rcard .info .meta i{color:#1e5a9e}
+  .rcard .stat{text-align:right;white-space:nowrap}
+  .rcard .stat .st{font-size:12px;font-weight:600}
+  .rcard .stat .cv{font-size:11px;color:#888;margin-top:2px}
+  .nivel-ALTA,.nivel-ADECUADA{border-left:5px solid #1d9e75}
+  .nivel-SEGUIMIENTO{border-left:5px solid #d89a1a}
+  .nivel-REDUCIDA{border-left:5px solid #d89a1a}
+  .nivel-SINEXISTENCIA{border-left:5px solid #c0392b}
+  .st-ok{color:#1d9e75}.st-warn{color:#ba7517}.st-bad{color:#c0392b}
+  .empty{padding:30px;text-align:center;color:#888;font-size:14px}
+  .suggest{position:absolute;background:#fff;border:1px solid #1e5a9e;border-top:none;border-radius:0 0 8px 8px;max-height:280px;overflow-y:auto;z-index:900;width:100%}
+  .suggest div{padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid #eee}
+  .suggest div:hover{background:#f0f6fc}
+  .sg-tag{font-size:10px;color:#888;margin-left:6px}
+  .loading{padding:40px;text-align:center;color:#1e5a9e}
+  footer{text-align:center;font-size:11px;color:#888;padding:16px}
+  @media(max-width:640px){.metrics{grid-template-columns:1fr}.hdr-right{display:none}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="hdr">
-    <img id="logoCss" src="icons/icon-192.png" alt="CSS Panamá" onerror="this.style.display='none'"/>
+
+<header>
+  <div class="brand">
+    <div class="logo">CSS</div>
     <div>
-      <h1>Disponibilidad de Medicamentos</h1>
-      <div class="sub" id="hsub">Caja de Seguro Social · Panamá</div>
+      <div class="sub">Búsqueda de medicamentos</div>
+      <div class="ttl">Mi Farma Digital</div>
     </div>
-    <div class="inst-badge" id="instBadge">—</div>
-    <button class="reset-btn" id="resetBtn" onclick="resetDash()" title="Volver a la vista país completo">↻ Reiniciar</button>
-    <button class="install-btn" id="installBtn">⤓ Instalar app</button>
+  </div>
+  <div class="hdr-right">Caja de Seguro Social · República de Panamá</div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <h1>¿Buscas tu medicina?</h1>
+    <p>Te decimos si hay y dónde está la unidad más cercana a ti.</p>
   </div>
 
-  <!-- BANDA DE PROVINCIAS -->
-  <div class="prov-band" id="provBand"></div>
-
-  <!-- MAPA TERMOGRÁFICO -->
-  <div class="map-card">
-    <div class="map-head">
-      <span class="ttl">🗺️ Termografía de abastecimiento</span>
-      <span id="mapScopeLbl" style="font-size:11px;color:var(--mut);font-style:italic"></span>
-      <div style="flex:1"></div>
-      <span style="font-size:10px;color:var(--mut);margin-right:2px">Nivel de abastecimiento:</span>
-      <span class="lg"><span class="dot" style="background:#a93226"></span>Crítico &lt;30d</span>
-      <span class="lg"><span class="dot" style="background:#b7950b"></span>Bajo &lt;90d</span>
-      <span class="lg"><span class="dot" style="background:#27ae60"></span>Óptimo ≥90d</span>
+  <div class="searchbar" style="position:relative">
+    <div class="searchbox">
+      <i class="ti ti-search" style="color:#1e5a9e;font-size:20px"></i>
+      <input id="q" placeholder="Escriba el medicamento…" autocomplete="off"/>
+      <div id="suggest" class="suggest" style="display:none"></div>
     </div>
-    <div id="map"></div>
-    <div class="map-stats" id="mapStats"></div>
+    <button class="btn" onclick="doSearch()">Buscar</button>
   </div>
 
-  <!-- FILTROS -->
   <div class="filters">
-    <input type="text" id="q" placeholder="🔍 Buscar medicamento (ej. amlodipina)…" oninput="onSearch(this.value)"/>
-    <select id="provSel" onchange="onProv(this.value)"><option value="">Todo el país</option></select>
-    <select id="tipoSel" onchange="onTipo(this.value)"><option value="">Todo tipo de unidad</option></select>
-    <div class="seg" id="impSeg">
-      <button class="on" data-imp="" onclick="onImp('')">Todos</button>
-      <button data-imp="VITAL" onclick="onImp('VITAL')">Prioritarios</button>
-    </div>
-    <span class="cnt" id="cnt"></span>
+    <button class="btn-ghost" style="height:auto;padding:8px 14px" onclick="useGeo()"><i class="ti ti-map-pin"></i> Usar mi ubicación</button>
+    <select id="fProv"><option value="">Todas las provincias</option></select>
+    <select id="fTipo"><option value="">Todo tipo de unidad</option></select>
   </div>
 
-  <!-- TABLA -->
-  <div class="tbl-card">
-    <div class="scroll">
-      <table>
-        <colgroup><col class="c-exp"/><col/><col class="c-dias"/><col class="c-pct"/><col class="c-score"/><col class="c-inst"/></colgroup>
-        <thead class="main-head"><tr>
-          <th class="nosort"></th>
-          <th onclick="sortBy('sum')">Medicamento</th>
-          <th class="num" onclick="sortBy('dias')">Días cobertura</th>
-          <th class="num" onclick="sortBy('su')">% Inst.</th>
-          <th class="num" onclick="sortBy('salud')">Score salud</th>
-          <th class="num" onclick="sortBy('nstock')">Instalac.</th>
-        </tr></thead>
-        <tbody id="tb"></tbody>
-      </table>
-    </div>
+  <div class="metrics" id="metrics"></div>
+
+  <div id="medhead"></div>
+  <div id="map" style="display:none"></div>
+  <div class="legend" id="legend" style="display:none">
+    <span><span class="dot" style="background:#1d9e75"></span>Disponible</span>
+    <span><span class="dot" style="background:#d89a1a"></span>Cobertura baja</span>
+    <span><span class="dot" style="background:#c0392b"></span>Sin existencia</span>
+    <span><span class="dot" style="background:#1e5a9e"></span>Tu ubicación</span>
   </div>
+  <div class="scope" id="scope"></div>
+  <div class="results" id="results"></div>
+
 </div>
 
+<footer>Caja de Seguro Social · Dirección Nacional de Logística — Datos al <span id="fecha"></span></footer>
 
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-let D, m;  // se cargan desde data.json
-const f = n => (n==null?'-':Number(n).toLocaleString('es-PA'));
-let OPT = 90; // óptimo de días; se reasigna desde m.optimo_dias al cargar
+let D=null, map=null, markers=[], userPos=null, selected=null;
 
-// ---- estado ----
-let st = { q:'', prov:'', tipo:'', imp:'', sort:{k:'salud',d:-1}, expand:null, expTab:'mapa', skuSel:null };
+// Endpoint del Web App (GAS sirve el JSON desde caché). Pega aquí la URL .../exec
+// Si queda vacío o falla, cae al data.json estático de GitHub Pages.
+const API_URL='';
 
-// ---- helpers de días/color ----
-// días: null=sin existencia · 9999=tiene stock pero sin consumo registrado · número=días reales
-function diasClass(d){ if(d==null)return 'nd'; if(d>=9999)return 'ok'; if(d===0)return 'cero'; if(d<30)return 'bajo'; if(d<OPT)return 'med'; return 'ok'; }
-function diasColor(d){ if(d==null)return '#b0b0b0'; if(d>=9999)return '#27ae60'; if(d===0)return '#5b2c25'; if(d<30)return '#a93226'; if(d<OPT)return '#b7950b'; return '#27ae60'; }
-function diasLabel(d){ if(d==null)return 'sin existencia'; if(d>=9999)return '+365 días'; return d+' días'; }
-function diasShort(d){ if(d==null)return '—'; if(d>=9999)return '+365d'; return d+'d'; }
-function scColor(s){ return s<40?'#a93226':s<60?'#b7950b':s<85?'#2874a6':'#1e8449'; }
+function norm(s){return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();}
+function haversine(a,b,c,d){const R=6371,r=Math.PI/180;const dla=(c-a)*r,dlo=(d-b)*r;const x=Math.sin(dla/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dlo/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 
-// ============ BANDA DE PROVINCIAS ============
-// Muestra días medianos por provincia a nivel GENERAL (todos los renglones del segmento),
-// independiente del renglón que se expanda — funciona como cabecera de contexto estable.
-function provStats(){
-  const skus = D.sku.filter(s=>!st.imp||s.imp===st.imp).map(s=>s.sku);
-  const byProv={};
-  for(const sku of skus){ (D.det[sku]||[]).forEach(d=>{ if(!d.prov)return; if(st.tipo&&d.tipo!==st.tipo)return;
-    (byProv[d.prov]=byProv[d.prov]||{arr:[],ues:new Set()});
-    byProv[d.prov].ues.add(d.ue);
-    if(d.dias!=null && d.dias<9999) byProv[d.prov].arr.push(d.dias); }); }
-  const out=[];
-  for(const p of D.provincias){ const o=byProv[p]; if(!o)continue;
-    const a=o.arr.slice().sort((x,y)=>x-y); const med=a.length?a[Math.floor(a.length/2)]:null;
-    out.push({prov:p,med,n:o.ues.size}); }
-  return out;
-}
-function drawProvBand(){
-  const stats=provStats();
-  const el=document.getElementById('provBand');
-  const all=`<div class="prov-card ${st.prov===''?'on':''}" onclick="pickProv('')">
-    <div class="pn">Todo el país</div>
-    <div class="pd" style="color:var(--azul)">${Object.keys(D.inst).length}</div>
-    <div class="pl">instalaciones</div></div>`;
-  el.innerHTML = all + stats.map(s=>{
-    const col=diasColor(s.med); const pct=s.med==null?0:Math.min(100,s.med/OPT*100);
-    return `<div class="prov-card ${st.prov===s.prov?'on':''}" style="border-top-color:${st.prov===s.prov?col:'var(--bd)'}" onclick="pickProv('${s.prov}')">
-      <div class="pn" title="${s.prov}">${s.prov}</div>
-      <div class="pd" style="color:${col}">${s.med==null?'—':s.med}<span style="font-size:10px;color:var(--mut)"> d</span></div>
-      <div class="pl">${s.n} instalac.</div>
-      <div class="pbar"><i style="width:${pct}%;background:${col}"></i></div></div>`;
-  }).join('');
-}
-function pickProv(p){ st.prov=p; document.getElementById('provSel').value=p; st.expand=null; st.skuSel=null; render(); updateMap(); drawProvBand(); }
-
-// ============ MODAL CLASE (ABC-XYZ) ============
-function showClase(sku){
-  const s=D.sku.find(x=>x.sku===sku); if(!s)return;
-  const cl=s.clase, a=cl[0], x=cl[1];
-  const A={A:'Alta rotación',B:'Rotación media',C:'Baja rotación'};
-  const Adesc={A:'concentra parte del 80% superior del consumo nacional',B:'está en el siguiente 15% del consumo',C:'está en el 5% de menor consumo'};
-  const X={X:'Demanda estable',Y:'Demanda variable',Z:'Demanda irregular'};
-  const Xdesc={X:'predecible, fácil de planificar (variación ≤75%)',Y:'planificación moderada (variación 75–150%)',Z:'esporádica o difícil de prever (variación >150% o pocos puntos de consumo)'};
-  const cvPct=Math.round((s.cv||0)*100);
-  const html=`<div class="modal-bg" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-h">Clasificación <span class="clase" style="font-size:14px">${cl}</span><span class="modal-x" onclick="closeModal()">✕</span></div>
-    <div class="modal-b">
-      <p style="font-weight:600;color:var(--txt)">${s.sum}</p>
-      <p>La clase combina dos análisis estándar de inventario, calculados con el consumo real de este renglón:</p>
-      <div class="cl-row"><b>${a} — ${A[a]} (ABC por volumen)</b>
-        <div>Este renglón ${Adesc[a]}.</div>
-        <div class="cl-data">Consumo mensual nacional: <b>${f(s.consmes)}</b> unidades · representa el <b>${s.pctcons}%</b> del consumo total.</div></div>
-      <div class="cl-row"><b>${x} — ${X[x]} (XYZ por variabilidad)</b>
-        <div>Demanda ${Xdesc[x]}.</div>
-        <div class="cl-data">Variabilidad entre instalaciones: <b>${cvPct}%</b> · se consume en <b>${s.nuec}</b> instalaciones.</div></div>
-      <p class="cl-note"><b>Lectura:</b> un <b>AX</b> es lo más crítico de gestionar (mucho consumo, muy predecible: no debe faltar nunca). Un <b>CZ</b> es de bajo consumo e irregular (se maneja bajo pedido). Este renglón es <b>${cl}</b>.</p>
-    </div></div></div>`;
-  let m=document.getElementById('modalHost'); if(!m){m=document.createElement('div');m.id='modalHost';document.body.appendChild(m);} m.innerHTML=html;
-}
-function closeModal(){ const m=document.getElementById('modalHost'); if(m)m.innerHTML=''; }
-
-// ============ MAPA ============
-let map, heatLayer, heatGood, markerLayer;
-function initMap(){
-  map = L.map('map',{zoomControl:true,scrollWheelZoom:true}).setView([8.7,-80.2],7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
-  markerLayer = L.layerGroup().addTo(map);
-  updateMap();
-}
-// Devuelve [{ue,lat,lng,prov,dias,extra}] según el alcance actual (renglón seleccionado o agregado nacional)
-function mapPoints(){
-  const pts=[];
-  if(st.skuSel){
-    const det = D.det[st.skuSel]||[];
-    det.forEach(d=>{ if(d.lat==null) return; if(st.prov&&d.prov!==st.prov) return; if(st.tipo&&d.tipo!==st.tipo) return;
-      // base = saldo>0. Las de saldo 0 se marcan desabastecidas (no entran al gradiente de cobertura).
-      pts.push({ue:d.ue,lat:d.lat,lng:d.lng,prov:d.prov,tipo:d.tipo,saldo:d.saldo,
-        dias:d.saldo>0?d.dias:0, desab:d.saldo===0}); });
-  } else {
-    const skus = D.sku.filter(s=>!st.imp||s.imp===st.imp).map(s=>s.sku);
-    const agg={};
-    for(const sku of skus){ (D.det[sku]||[]).forEach(d=>{ if(d.lat==null)return; if(st.prov&&d.prov!==st.prov)return; if(st.tipo&&d.tipo!==st.tipo)return;
-      if(!agg[d.ue])agg[d.ue]={ue:d.ue,lat:d.lat,lng:d.lng,prov:d.prov,tipo:d.tipo,arr:[],conStock:0,sinStock:0};
-      if(d.saldo>0){ agg[d.ue].conStock++; if(d.dias!=null) agg[d.ue].arr.push(d.dias); }
-      else agg[d.ue].sinStock++; }); }
-    Object.values(agg).forEach(o=>{
-      // mediana de días reales (>0, <9999) donde hay stock
-      const reales=o.arr.filter(x=>x>0&&x<9999).sort((x,y)=>x-y);
-      const med = o.conStock===0 ? 0 : (reales.length? reales[Math.floor(reales.length/2)] : 9999);
-      pts.push({ue:o.ue,lat:o.lat,lng:o.lng,prov:o.prov,tipo:o.tipo,dias:med,n:o.conStock,desab:o.conStock===0}); });
-  }
-  return pts;
-}
-function updateMap(){
-  const pts = mapPoints();
-  markerLayer.clearLayers();
-  if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
-  if(heatGood){ map.removeLayer(heatGood); heatGood=null; }
-  // El gradiente térmico solo usa unidades CON STOCK (base = saldo>0). Las desabastecidas no tiñen.
-  const conStock = pts.filter(p=>!p.desab && p.dias!=null);
-  const valOf = d => (d>=9999 ? OPT*1.2 : d);
-  const heatMal = conStock.filter(p=>valOf(p.dias) < OPT).map(p=>{
-    const falta = 1 - Math.min(valOf(p.dias),OPT)/OPT;
-    return [p.lat,p.lng, Math.max(0.12,falta)];
-  });
-  const heatBien = conStock.filter(p=>valOf(p.dias) >= OPT*0.6).map(p=>{
-    const bien = Math.min(1,(valOf(p.dias)-OPT*0.6)/(OPT*0.4));
-    return [p.lat,p.lng, Math.max(0.12,bien)];
-  });
-  if(heatBien.length){
-    heatGood = L.heatLayer(heatBien,{radius:40,blur:30,maxZoom:11,minOpacity:.25,max:1.0,
-      gradient:{0.0:'rgba(39,174,96,0)',0.4:'#7dcea0',0.7:'#52be80',1.0:'#1e8449'}}).addTo(map);
-  }
-  if(heatMal.length){
-    heatLayer = L.heatLayer(heatMal,{radius:40,blur:30,maxZoom:11,minOpacity:.30,max:1.0,
-      gradient:{0.0:'rgba(169,50,38,0)',0.4:'#f4d03f',0.7:'#e67e22',1.0:'#a93226'}}).addTo(map);
-  }
-  pts.forEach(p=>{
-    if(p.desab) return; // las desabastecidas no se dibujan (hacían ruido); se cuentan en las tarjetas y se listan en la tabla
-    const col=diasColor(p.dias);
-    const mk=L.circleMarker([p.lat,p.lng],{radius:8,fillColor:col,color:'#fff',weight:1.5,fillOpacity:.95});
-    mk.bindPopup(`<b>${p.ue}</b><br>${p.prov||''}${p.tipo?' · '+p.tipo:''}<br><b style="color:${col}">${diasLabel(p.dias)}</b>${(p.dias!=null&&p.dias<9999&&p.dias>0)?' de cobertura':''}${st.skuSel?`<br>Existencia: ${f(p.saldo)}`:`<br>${p.n||0} renglones con stock`}`);
-    markerLayer.addLayer(mk);
-  });
-  // encuadre: usar solo puntos con stock (los visibles)
-  const vis=pts.filter(p=>!p.desab);
-  if(vis.length){
-    const ll=vis.map(p=>[p.lat,p.lng]);
-    try{ map.fitBounds(ll,{padding:[40,40],maxZoom: st.prov?11:9}); }catch(e){}
-  }
-  drawMapStats(statsUnits());
-  const scope = st.skuSel ? `Renglón: ${(D.sku.find(s=>s.sku===st.skuSel)||{}).sum||''}` : (st.imp?`${st.imp==='VITAL'?'Prioritarios':'Esenciales'}`:'Todos los medicamentos');
-  const su=statsUnits(); const conStockN=su.filter(p=>!p.desab).length, desabN=su.filter(p=>p.desab).length;
-  document.getElementById('mapScopeLbl').textContent = `— ${scope}${st.prov?' · '+st.prov:''}${st.tipo?' · '+st.tipo:''} · ${conStockN} U.E. con stock${desabN?` · ${desabN} sin existencia`:''}`;
-}
-// Universo para las TARJETAS: todas las U.E. del ámbito (mapeadas o no), para que cuadre con la tabla.
-function statsUnits(){
-  if(st.skuSel){
-    return (D.det[st.skuSel]||[]).filter(d=>(!st.prov||d.prov===st.prov)&&(!st.tipo||d.tipo===st.tipo))
-      .map(d=>({dias:d.saldo>0?d.dias:0, desab:d.saldo===0}));
-  }
-  const skus = D.sku.filter(s=>!st.imp||s.imp===st.imp).map(s=>s.sku);
-  const agg={};
-  for(const sku of skus){ (D.det[sku]||[]).forEach(d=>{ if(st.prov&&d.prov!==st.prov)return; if(st.tipo&&d.tipo!==st.tipo)return;
-    if(!agg[d.ue])agg[d.ue]={arr:[],conStock:0};
-    if(d.saldo>0){ agg[d.ue].conStock++; if(d.dias!=null) agg[d.ue].arr.push(d.dias); } }); }
-  return Object.values(agg).map(o=>{
-    const reales=o.arr.filter(x=>x>0&&x<9999).sort((x,y)=>x-y);
-    const med=o.conStock===0?0:(reales.length?reales[Math.floor(reales.length/2)]:9999);
-    return {dias:med, desab:o.conStock===0};
+// JSONP al endpoint GAS (evita CORS), con timeout. Cae a data.json de GitHub.
+function cargarData(){
+  return new Promise((resolve,reject)=>{
+    if(!API_URL){ return fetchLocal(resolve,reject); }
+    const cb='__mfd_'+Date.now();
+    const sc=document.createElement('script');
+    let done=false;
+    const to=setTimeout(()=>{ if(!done){done=true;cleanup();fetchLocal(resolve,reject);} },8000);
+    function cleanup(){ clearTimeout(to); delete window[cb]; if(sc.parentNode)sc.parentNode.removeChild(sc); }
+    window[cb]=(j)=>{ if(done)return; done=true; cleanup(); (j&&j.sku)?resolve(j):fetchLocal(resolve,reject); };
+    sc.onerror=()=>{ if(!done){done=true;cleanup();fetchLocal(resolve,reject);} };
+    sc.src=API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'action=getData&callback='+cb;
+    document.body.appendChild(sc);
   });
 }
-function drawMapStats(pts){
-  const conStock = pts.filter(p=>!p.desab && p.dias!=null);   // base: unidades con stock
-  const desab = pts.filter(p=>p.desab).length;                 // desabastecidas (saldo 0)
-  const reales = conStock.filter(p=>p.dias>0 && p.dias<9999).map(p=>p.dias).sort((a,b)=>a-b);
-  const med = reales.length? reales[Math.floor(reales.length/2)] : null;
-  const optn = conStock.filter(p=>p.dias>=OPT).length;         // incluye +365
-  const bajo = conStock.filter(p=>p.dias>=30 && p.dias<OPT).length;
-  const crit = conStock.filter(p=>p.dias>0 && p.dias<30).length;
-  document.getElementById('mapStats').innerHTML=`
-    <div class="st"><div class="v" style="color:${diasColor(med)}">${med==null?'-':med}</div><div class="l">Días de cobertura<span class="sub2">mediana donde hay stock</span></div></div>
-    <div class="st"><div class="v" style="color:#1e8449">${optn}</div><div class="l">U. ejecutoras óptimas<span class="sub2">≥${OPT} días</span></div></div>
-    <div class="st"><div class="v" style="color:#b7950b">${bajo}</div><div class="l">U. ejecutoras bajo óptimo<span class="sub2">30 a 89 días</span></div></div>
-    <div class="st"><div class="v" style="color:#a93226">${crit}</div><div class="l">U. ejecutoras críticas<span class="sub2">menos de 30 días</span></div></div>
-    <div class="st"><div class="v" style="color:#5b6b7a">${desab}</div><div class="l">U. ejecutoras sin existencia<span class="sub2">saldo en cero</span></div></div>`;
+function fetchLocal(resolve,reject){
+  fetch('data.json').then(r=>r.json()).then(j=>resolve(j)).catch(e=>reject(e));
 }
 
-// ============ TABLA ============
-function nStock(s){ return (D.det[s.sku]||[]).filter(d=>d.saldo>0 && (!st.prov||d.prov===st.prov) && (!st.tipo||d.tipo===st.tipo)).length; }
-// Métricas del renglón recalculadas según el filtro activo (provincia/tipo).
-// Sin filtro => valores nacionales. Con filtro => solo las U.E. del ámbito.
-function scopedMetrics(s){
-  if(!st.prov && !st.tipo){
-    return {dias:s.dias, su:s.su, salud:s.salud, nstock:nStock(s), desab:0, scoped:false};
-  }
-  const det=(D.det[s.sku]||[]).filter(d=>(!st.prov||d.prov===st.prov)&&(!st.tipo||d.tipo===st.tipo));
-  const conStock=det.filter(d=>d.saldo>0);
-  const desab=det.filter(d=>d.saldo===0).length;
-  if(conStock.length===0){
-    // hay registros del renglón en el ámbito pero todos en 0, o no hay registros
-    return {dias: det.length?0:null, su:det.length?0:null, salud:det.length?0:null, nstock:0, desab, scoped:true, vacio:det.length===0};
-  }
-  // cobertura del ámbito = stock total ÷ demanda diaria total del ámbito
-  let stock=0, demdia=0;
-  conStock.forEach(d=>{ stock+=d.saldo; demdia+=(d.cons||0)/30; });
-  let dias = demdia>0 ? Math.round(stock/demdia) : 9999;
-  if(dias>365) dias=9999; // tope: stock muy alto vs consumo casi nulo => "+365 días"
-  const su = demdia>0 ? Math.round(Math.min(100, stock/(demdia*90)*100)*10)/10 : 100;
-  const salud = dias>=9999?100:(dias>=90?100:Math.round(Math.min(100,dias/90*100)*10)/10);
-  return {dias, su, salud, nstock:conStock.length, desab, scoped:true};
-}
-function filtered(){
-  let rows = D.sku.filter(s=> (!st.q||s.sum.toLowerCase().includes(st.q)||s.sku.includes(st.q)) && (!st.imp||s.imp===st.imp) );
-  rows.forEach(s=>{ s._m=scopedMetrics(s); s._n=s._m.nstock; });
-  // con filtro de provincia/tipo, ocultar renglones que no existen en el ámbito
-  if(st.prov||st.tipo) rows=rows.filter(s=>!s._m.vacio);
-  const k=st.sort.k, d=st.sort.d;
-  rows.sort((a,b)=>{
-    if(a.faro!==b.faro) return b.faro-a.faro;
-    let va,vb;
-    if(k==='sum'){va=a.sum;vb=b.sum;return d*va.localeCompare(vb);}
-    if(k==='nstock'){va=a._n;vb=b._n;}
-    else if(k==='dias'||k==='su'||k==='salud'){va=a._m[k]==null?-1:a._m[k]; vb=b._m[k]==null?-1:b._m[k];}
-    else{va=a[k]==null?-1:a[k]; vb=b[k]==null?-1:b[k];}
-    return d*(va-vb);
-  });
-  return rows;
-}
-function render(){
-  const rows=filtered();
-  const scopeTxt = (st.prov||st.tipo)?` · ámbito: ${st.prov||''}${st.prov&&st.tipo?' / ':''}${st.tipo||''}`:'';
-  document.getElementById('cnt').textContent=`${Math.min(rows.length,400)} de ${rows.length} medicamentos${scopeTxt}`;
-  const tb=document.getElementById('tb');
-  tb.innerHTML=rows.slice(0,400).map(s=>{
-    const mt=s._m;
-    let row=`<tr class="med" onclick="toggle('${s.sku}')">
-      <td class="c1"><span class="exp-ind">${st.expand===s.sku?'−':'+'}</span></td>
-      <td><div class="medname">${s.sum} <span class="clase" onclick="event.stopPropagation();showClase('${s.sku}')" title="Ver clasificación">${s.clase}</span></div><div class="medsub">Renglón ${s.sku}${s.grupo!=='—'?' · '+s.grupo:''}${mt.scoped?' · '+(st.prov||st.tipo):''}</div></td>
-      <td class="num cell-dias"><span class="dias ${diasClass(mt.dias)}">${diasLabel(mt.dias)}</span></td>
-      <td class="num cell-pct" style="color:var(--mut)">${mt.su==null?'-':mt.su+'%'}</td>
-      <td class="num cell-score"><span class="sc" style="color:${scColor(mt.salud||0)}">${mt.salud==null?'-':mt.salud}</span></td>
-      <td class="num cell-inst">${mt.nstock}${mt.desab?`<span class="desab-tag" title="${mt.desab} sin existencia">+${mt.desab}⊘</span>`:''}</td></tr>`;
-    if(st.expand===s.sku) row+=`<tr class="exprow"><td colspan="6"><div class="expinner">${expandHtml(s)}</div></td></tr>`;
-    return row;
-  }).join('');
-}
-function toggle(sku){
-  if(st.expand===sku){ st.expand=null; st.skuSel=null; }
-  else { st.expand=sku; st.skuSel=sku; st.expTab='mapa'; }
-  render(); updateMap();
-}
+cargarData().then(j=>{D=j;boot();})
+  .catch(e=>{document.getElementById('results').innerHTML='<div class="empty">No se pudo cargar la información. Intente más tarde.</div>';console.error(e);});
 
-// ============ EXPAND (sub-pestañas, sin modal) ============
-function expandHtml(s){
-  const tabs=[['mapa','Mapa de este renglón'],['ue','Dónde hay existencia'],['cedis','En bodega central']];
-  return `<div class="exptabs">${tabs.map(t=>`<span class="exptab ${st.expTab===t[0]?'on':''}" onclick="event.stopPropagation();st.expTab='${t[0]}';render();">${t[1]}</span>`).join('')}</div>
-    <div class="expbody" onclick="event.stopPropagation()">${expInner(s)}</div>`;
-}
-function medStock(sku){
-  const reales=(D.det[sku]||[]).filter(d=>d.saldo>0 && d.dias!=null && d.dias>0 && d.dias<9999 && (!st.prov||d.prov===st.prov) && (!st.tipo||d.tipo===st.tipo)).map(d=>d.dias).sort((a,b)=>a-b);
-  return reales.length? reales[Math.floor(reales.length/2)] : null;
-}
-function expInner(s){
-  if(st.expTab==='mapa'){
-    const ms=medStock(s.sku);
-    const desab=(D.det[s.sku]||[]).filter(d=>d.saldo===0 && (!st.prov||d.prov===st.prov) && (!st.tipo||d.tipo===st.tipo)).length;
-    return `<div class="note">El mapa de arriba muestra <b>${s.sum}</b>: cada unidad ejecutora con existencia, coloreada por sus días de cobertura. Las que están sin existencia aparecen como punto hueco gris.</div>
-      <div class="comp">
-        <div class="compc"><div class="cl">Cobertura nacional</div><div class="cv" style="color:${diasColor(s.dias)}">${diasLabel(s.dias)}</div><div style="font-size:9px;color:#888">stock total ÷ demanda total</div></div>
-        <div class="compc"><div class="cl">Mediana donde hay stock</div><div class="cv" style="color:${diasColor(ms)}">${ms==null?'—':ms+' d'}</div><div style="font-size:9px;color:#888">U.E. con existencia</div></div>
-        <div class="compc"><div class="cl">U.E. con existencia</div><div class="cv">${nStock(s)}</div></div>
-        <div class="compc"><div class="cl">U.E. sin existencia</div><div class="cv" style="color:#5b6b7a">${desab}</div></div></div>`;
-  }
-
-  if(st.expTab==='cedis'){
-    return `<div class="note amar">El inventario en bodega central (CEDIS) <b>no</b> cuenta para los días de cobertura del paciente: aún no ha llegado a las instalaciones. Aquí está como referencia de lo que está en camino.</div>
-      <div class="comp"><div class="compc"><div class="cl">En bodega central</div><div class="cv" style="color:var(--mut)">${f(s.stockced)}</div><div style="font-size:9px;color:#666">${s.mesesced==null?'-':s.mesesced+' meses'}</div></div>
-      <div class="compc"><div class="cl">En instalaciones</div><div class="cv">${f(s.stockue)}</div></div></div>`;
-  }
-  // ue — mostrar TODAS las que manejan el renglón: primero con stock (por saldo), luego las desabastecidas
-  const all=(D.det[s.sku]||[]).filter(d=>(!st.prov||d.prov===st.prov)&&(!st.tipo||d.tipo===st.tipo));
-  const conStock=all.filter(d=>d.saldo>0).sort((a,b)=>b.saldo-a.saldo);
-  const sinStock=all.filter(d=>d.saldo===0).sort((a,b)=>a.ue.localeCompare(b.ue));
-  const det=[...conStock,...sinStock];
-  if(!det.length) return '<p style="color:var(--mut);padding:10px">Este renglón no se maneja en'+(st.prov?' '+st.prov:' ninguna unidad')+(st.tipo?' ('+st.tipo+')':'')+'.</p>';
-  const hdr=sinStock.length?`<div class="note" style="margin-bottom:6px">${conStock.length} unidad(es) con existencia · <b style="color:#a93226">${sinStock.length} sin existencia</b> (resaltadas al final). El consumo mensual da el marco de referencia: días = existencia ÷ (consumo ÷ 30).</div>`:`<div class="note" style="margin-bottom:6px">Días de cobertura = existencia ÷ consumo diario. El consumo mensual se muestra como referencia del cálculo.</div>`;
-  return hdr+`<table class="dtbl"><thead><tr><th style="text-align:left">Unidad Ejecutora</th><th style="text-align:center">Tipo</th><th style="text-align:center">Provincia</th><th style="text-align:right">Existencia</th><th style="text-align:right">Consumo/mes</th><th style="text-align:center">Días cobertura</th></tr></thead><tbody>
-    ${det.map(d=>{
-      const sinEx = d.saldo===0;
-      const cero = !sinEx && (d.dias===0);
-      const etq = sinEx ? 'sin existencia' : diasLabel(d.dias);
-      const cls = sinEx ? 'desab' : diasClass(d.dias);
-      return `<tr${sinEx?' style="background:#fbeceb"':(cero?' style="background:#fff4f0"':'')}>
-        <td style="text-align:left">${d.ue}</td>
-        <td style="text-align:center;color:var(--mut)">${d.tipo||'—'}</td>
-        <td style="text-align:center">${d.prov||'—'}</td>
-        <td style="text-align:right;font-family:var(--mono)">${f(d.saldo)}</td>
-        <td style="text-align:right;font-family:var(--mono);color:var(--mut)">${d.cons?f(d.cons):'—'}</td>
-        <td style="text-align:center"><span class="dias ${cls}" style="min-width:auto;padding:2px 8px">${etq}</span></td></tr>`;
-    }).join('')}
-    </tbody></table>`;
-}
-
-// ============ FILTROS ============
-function onSearch(v){ st.q=v.toLowerCase(); st.expand=null; st.skuSel=null; render(); updateMap(); }
-function onProv(v){ st.prov=v; render(); updateMap(); drawProvBand(); }
-function onTipo(v){ st.tipo=v; render(); updateMap(); }
-function onImp(v){ st.imp=v; document.querySelectorAll('#impSeg button').forEach(b=>b.classList.toggle('on',b.dataset.imp===v)); st.expand=null; st.skuSel=null; render(); updateMap(); }
-function sortBy(k){ if(st.sort.k===k)st.sort.d*=-1; else st.sort={k,d:(k==='sum')?1:1}; render(); }
-function resetDash(){
-  st={ q:'', prov:'', tipo:'', imp:'', sort:{k:'salud',d:-1}, expand:null, expTab:'mapa', skuSel:null };
-  document.getElementById('q').value='';
-  document.getElementById('provSel').value='';
-  document.getElementById('tipoSel').value='';
-  document.querySelectorAll('#impSeg button').forEach(b=>b.classList.toggle('on',b.dataset.imp===''));
-  closeModal();
-  render(); updateMap(); drawProvBand();
-  try{ map.setView([8.7,-80.2],7); }catch(e){}
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-// ============ INIT ============
 function boot(){
-  OPT = m.optimo_dias || 90;
-  document.getElementById('hsub').textContent=`Caja de Seguro Social · Panamá · ${m.n_sku} medicamentos · corte ${m.fecha}`;
-  document.getElementById('instBadge').textContent=`${m.n_sku} medicamentos · ${Object.keys(D.inst).length} instalaciones mapeadas`;
-  const ps=document.getElementById('provSel');
-  D.provincias.forEach(p=>{ const o=document.createElement('option');o.value=p;o.textContent=p;ps.appendChild(o); });
-  const ts=document.getElementById('tipoSel');
-  (D.tipos||[]).forEach(t=>{ const o=document.createElement('option');o.value=t;o.textContent=t;ts.appendChild(o); });
-  drawProvBand();
-  initMap(); render();
+  document.getElementById('fecha').textContent=D.meta.fecha;
+  // métricas
+  const m=D.meta;
+  document.getElementById('metrics').innerHTML=`
+    <div class="mcard m-blue"><div class="big num">${m.pct_disp}</div><div class="lbl">de medicamentos disponibles<br>${m.lom_disp} de ${m.lom_total} de la Lista Oficial</div></div>
+    <div class="mcard m-white"><div class="big num">${m.n_med}</div><div class="lbl">medicamentos en seguimiento<br>cobertura por unidad ejecutora</div></div>
+    <div class="mcard m-amber"><div class="big num">${m.vital_sin}</div><div class="lbl">medicamentos <b>vitales</b><br>requieren reposición</div></div>`;
+  // filtros
+  const fp=document.getElementById('fProv');D.provincias.forEach(p=>fp.innerHTML+=`<option>${p}</option>`);
+  const ft=document.getElementById('fTipo');D.tipos.forEach(t=>ft.innerHTML+=`<option>${t}</option>`);
+  fp.onchange=ft.onchange=()=>{if(selected)renderResults();};
+  // autocompletar
+  const q=document.getElementById('q'),sg=document.getElementById('suggest');
+  q.addEventListener('input',()=>{
+    const v=norm(q.value);if(v.length<2){sg.style.display='none';return;}
+    const hits=D.sku.filter(s=>norm(s.nombre).includes(v)).slice(0,12);
+    if(!hits.length){sg.style.display='none';return;}
+    sg.innerHTML=hits.map(s=>`<div onclick="pick('${s.cod}')">${s.nombre}<span class="sg-tag">${s.lom==='LOM'?'LOM':'No-LOM'}${s.vital==='VITAL'?' · Vital':''}</span></div>`).join('');
+    sg.style.display='block';
+  });
+  q.addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+  document.addEventListener('click',e=>{if(!e.target.closest('.searchbox'))sg.style.display='none';});
 }
-// ---- carga de datos externa ----
-fetch('data.json').then(r=>r.json()).then(json=>{ D=json; m=D.meta; boot(); })
-  .catch(e=>{ document.getElementById('tb').innerHTML='<tr><td colspan=7 style="padding:20px;color:#a93226">No se pudo cargar data.json. Verifique que esté junto al index.html.</td></tr>'; console.error(e); });
 
-// ============ PWA ============
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; document.getElementById('installBtn').style.display='inline-block'; });
-document.getElementById('installBtn').addEventListener('click',async()=>{ if(deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; document.getElementById('installBtn').style.display='none'; } });
-// service worker externo (cache offline)
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW:',e)); });
+function doSearch(){
+  const v=norm(document.getElementById('q').value);
+  if(v.length<2)return;
+  const hit=D.sku.find(s=>norm(s.nombre)===v)||D.sku.find(s=>norm(s.nombre).includes(v));
+  if(hit)pick(hit.cod);
+}
+function pick(cod){
+  selected=D.sku.find(s=>s.cod===cod);
+  document.getElementById('q').value=selected.nombre;
+  document.getElementById('suggest').style.display='none';
+  renderHead();renderResults();
+  document.getElementById('medhead').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderHead(){
+  const s=selected;
+  let tags=`<span class="tag ${s.lom==='LOM'?'t-lom':'t-nolom'}">${s.lom}</span>`;
+  if(s.vital==='VITAL')tags+=`<span class="tag t-vital"><i class="ti ti-heart"></i> Vital</span>`;
+  if(s.sistema)tags+=`<span class="tag t-cat">${s.sistema}</span>`;
+  document.getElementById('medhead').innerHTML=`<div class="medhead"><div class="name">${s.nombre}</div><div class="tags">${tags}</div></div>`;
+}
+
+function nivelClass(n){if(n==='ALTA'||n==='ADECUADA')return'nivel-ALTA';if(n==='SEGUIMIENTO'||n==='REDUCIDA')return'nivel-SEGUIMIENTO';if(n==='SIN EXISTENCIA')return'nivel-SINEXISTENCIA';return'nivel-ALTA';}
+function estado(f){
+  if(f.nivel==='SIN EXISTENCIA'||f.saldo<=0)return['st-bad','ti-circle-x','Sin existencia'];
+  if(f.nivel==='REDUCIDA'||f.nivel==='SEGUIMIENTO')return['st-warn','ti-alert-triangle','Cobertura baja'];
+  return['st-ok','ti-circle-check','Disponible'];
+}
+
+function renderResults(){
+  const cod=selected.cod;
+  let filas=(D.det[cod]||[]).slice();
+  const fp=document.getElementById('fProv').value,ft=document.getElementById('fTipo').value;
+  if(fp)filas=filas.filter(f=>f.prov===fp);
+  if(ft)filas=filas.filter(f=>f.tipo===ft);
+  // distancia
+  if(userPos){filas.forEach(f=>f.dist=haversine(userPos[0],userPos[1],f.lat,f.lng));filas.sort((a,b)=>a.dist-b.dist);}
+  else filas.sort((a,b)=>b.saldo-a.saldo);
+
+  const conEx=filas.filter(f=>f.saldo>0).length;
+  document.getElementById('scope').innerHTML=userPos
+    ?`Unidades cercanas a <b style="color:#1e5a9e">tu ubicación</b> · ${conEx} con existencia`
+    :`${filas.length} unidades · ${conEx} con existencia · <i>activa tu ubicación para ordenar por cercanía</i>`;
+
+  renderMap(filas);
+
+  const box=document.getElementById('results');
+  if(!filas.length){box.innerHTML='<div class="empty">No hay unidades para los filtros seleccionados.</div>';return;}
+  box.innerHTML=filas.map(f=>{
+    const[cls,icon,txt]=estado(f);
+    const dist=f.dist!=null?` · ${f.dist.toFixed(1)} km`:'';
+    const tel=f.tel?` · <i class="ti ti-phone"></i> ${f.tel.split(';')[0]}`:'';
+    const cob=f.saldo>0&&f.dias<9999?`cobertura ${Math.round(f.dias)} días`:(f.saldo>0?'con stock':'—');
+    return `<div class="rcard ${nivelClass(f.nivel)}">
+      <div class="info"><div class="nm">${f.nombre}</div>
+      <div class="meta"><i class="ti ti-map-pin"></i> ${f.loc||f.prov}${dist}${tel}</div></div>
+      <div class="stat"><div class="st ${cls}"><i class="ti ${icon}"></i> ${txt}</div><div class="cv">${cob}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderMap(filas){
+  document.getElementById('map').style.display='block';
+  document.getElementById('legend').style.display='flex';
+  if(!map){map=L.map('map',{scrollWheelZoom:false});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);}
+  markers.forEach(mk=>map.removeLayer(mk));markers=[];
+  const pts=[];
+  filas.forEach(f=>{
+    if(!f.lat)return;
+    const col=f.saldo<=0?'#c0392b':(f.nivel==='REDUCIDA'||f.nivel==='SEGUIMIENTO'?'#d89a1a':'#1d9e75');
+    const ic=L.divIcon({className:'',html:`<div style="width:16px;height:16px;border-radius:50%;background:${col};border:3px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.4)"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
+    const cob=f.saldo>0&&f.dias<9999?`<br>cobertura ${Math.round(f.dias)} días`:'';
+    const mk=L.marker([f.lat,f.lng],{icon:ic}).addTo(map).bindPopup(`<b>${f.nombre}</b><br>${f.loc||f.prov}${cob}${f.tel?'<br><i>'+f.tel.split(';')[0]+'</i>':''}`);
+    markers.push(mk);pts.push([f.lat,f.lng]);
+  });
+  if(userPos){
+    const um=L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(map).bindPopup('Tu ubicación');
+    markers.push(um);pts.push(userPos);
+  }
+  if(pts.length)map.fitBounds(pts,{padding:[30,30],maxZoom:12});
+  setTimeout(()=>map.invalidateSize(),200);
+}
+
+function useGeo(){
+  if(!navigator.geolocation){alert('Tu dispositivo no permite ubicación.');return;}
+  navigator.geolocation.getCurrentPosition(p=>{
+    userPos=[p.coords.latitude,p.coords.longitude];
+    if(selected)renderResults();
+    else alert('Ubicación activada. Busca un medicamento para ver las unidades más cercanas.');
+  },()=>alert('No se pudo obtener tu ubicación.'));
 }
 </script>
 </body>
