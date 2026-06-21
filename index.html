@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mi Farma Digital | Caja de Seguro Social</title>
+<title>Mi Farma Digital — Caja de Seguro Social</title>
 <meta name="theme-color" content="#0C447C">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:#ececec;color:#222;line-height:1.45;-webkit-text-size-adjust:100%}
@@ -137,6 +138,16 @@
   .info-modal .mbody .deftbl td{padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top}
   .info-modal .mbody .deftbl td:first-child{font-weight:600;color:#0C447C;white-space:nowrap}
   @media(min-width:560px){.modal-bg{align-items:center}.modal{border-radius:14px}}
+  /* Listado nacional: tabla en escritorio, tarjetas en móvil */
+  @media(max-width:600px){
+    #tablaNac thead{display:none}
+    #tablaNac, #tablaNac tbody, #tablaNac tr, #tablaNac td{display:block;width:100%}
+    #tablaNac tr.trow{border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;padding:6px 4px;background:#fff}
+    #tablaNac td{text-align:right!important;padding:5px 12px!important;border:none!important;display:flex;justify-content:space-between;align-items:center}
+    #tablaNac td:before{content:attr(data-lbl);color:#888;font-size:11px;font-weight:600;text-align:left}
+    #tablaNac td[data-lbl=""]{justify-content:flex-start;text-align:left!important;font-weight:600;color:#0C447C;border-bottom:1px solid #f0f0f0!important;padding-bottom:7px!important;margin-bottom:4px}
+    #tablaNac td[data-lbl=""]:before{content:""}
+  }
 </style>
 </head>
 <body>
@@ -153,7 +164,7 @@
 
 <div class="wrap">
   <button id="btnBack" onclick="volver()"><i class="ti ti-arrow-left"></i> Volver</button>
-  <div class="hero" id="hero"><h1>¿Buscas tu medicina?</h1><p>Te mostramos las coberturas en la unidad más cercana a ti.</p></div>
+  <div class="hero" id="hero"><h1>¿Buscas tu medicina?</h1><p>Te decimos si hay y dónde está la unidad más cercana a ti.</p></div>
 
   <div class="searchbar">
     <div class="searchbox"><i class="ti ti-search" style="color:#1e5a9e;font-size:20px"></i>
@@ -167,6 +178,8 @@
     <button class="btn-ghost" id="btnGeo" onclick="useGeo()"><i class="ti ti-map-pin"></i> Usar mi ubicación</button>
     <select id="fProv"><option value="">Todas las provincias</option></select>
     <select id="fTipo"><option value="">Todo tipo de unidad</option></select>
+    <select id="fSistema"><option value="">Todo sistema/uso</option></select>
+    <select id="fCrit"><option value="">Toda criticidad</option><option value="VITAL">Solo vitales</option></select>
   </div>
 
   <div class="metrics" id="metrics"></div>
@@ -186,6 +199,7 @@
     <span><span class="dot" style="background:#d89a1a"></span>Quedan pocas</span>
     <span><span class="dot" style="background:#c0392b"></span>Sin existencia</span>
     <span><span class="dot" style="background:#1e5a9e"></span>Tu ubicación</span>
+    <span style="color:#888;font-style:italic">· toca un punto para ver la unidad</span>
   </div>
   <div class="scope" id="scope"></div>
   <div class="results" id="results"></div>
@@ -240,9 +254,14 @@ function boot(){
   renderMetrics(null);
   const fp=document.getElementById('fProv');D.provincias.forEach(p=>fp.innerHTML+='<option>'+p+'</option>');
   const ft=document.getElementById('fTipo');D.tipos.forEach(t=>ft.innerHTML+='<option>'+t+'</option>');
+  const fs=document.getElementById('fSistema');
+  const sistemas=[...new Set(D.sku.filter(s=>s.sistema).map(s=>s.sistema))].sort();
+  sistemas.forEach(s=>fs.innerHTML+='<option>'+s+'</option>');
+  const fc=document.getElementById('fCrit');
+  fs.onchange=fc.onchange=()=>{if(selected)renderResults();};
   fp.onchange=()=>{
     if(selected){vistaMapa='pais';marcaVista();renderResults();}
-    else{ provFiltroInicio=fp.value; renderNearby(); } // en inicio: mover el mini-mapa a la provincia
+    else{ provFiltroInicio=fp.value; renderMetrics(null); renderNearby(); } // tarjetas + mapa adaptados a provincia
   };
   ft.onchange=()=>{if(selected)renderResults();};
   const q=document.getElementById('q'),sg=document.getElementById('suggest');
@@ -250,7 +269,11 @@ function boot(){
     document.getElementById('btnClear').style.display=q.value?'block':'none';
     if(selected){selected=null;} // limpiar selección al reescribir
     const v=norm(q.value);if(v.length<2){sg.style.display='none';sgIdx=-1;return;}
-    const hits=D.sku.filter(s=>norm(s.nombre).includes(v)).slice(0,12);
+    const fsv=document.getElementById('fSistema').value, fcv=document.getElementById('fCrit').value;
+    let hits=D.sku.filter(s=>norm(s.nombre).includes(v));
+    if(fsv)hits=hits.filter(s=>s.sistema===fsv);
+    if(fcv==='VITAL')hits=hits.filter(s=>s.vital==='VITAL');
+    hits=hits.slice(0,12);
     if(!hits.length){sg.style.display='none';sgIdx=-1;return;}
     sgHits=hits;sgIdx=-1;
     sg.innerHTML=hits.map((s,i)=>'<div data-i="'+i+'" onclick="pick(\''+s.cod+'\')">'+s.nombre+'<span class="sg-tag">'+s.lom+(s.vital==='VITAL'?' · Vital':'')+'</span></div>').join('');
@@ -275,13 +298,21 @@ function marcaSug(){const sg=document.getElementById('suggest');[].forEach.call(
 function renderMetrics(sku){
   const m=D.meta, box=document.getElementById('metrics');
   if(!sku){
+    // VISTA GENERAL (sin renglón): universo · % disponible · días, como el otro equipo
+    // Si hay filtro de provincia en inicio, las cifras se adaptan a esa provincia
+    const ambito = provFiltroInicio || null;
+    let lomTot=m.lom_total, disp=m.lom_disp, pct=parseFloat(m.pct_disp)||0, etiqueta='nacional';
+    let med=globalMediana(null);
+    if(ambito){
+      const st=ambitoStats(ambito);lomTot=m.lom_total;disp=st.disp;pct=st.pct;med=st.med;etiqueta=ambito;
+    }
     box.innerHTML=
-      '<div class="mcard m-blue"><button class="help" onclick="explicarMetrica()">ⓘ</button><div class="big num">'+m.pct_disp+'</div><div class="lbl">disponibles · '+m.lom_disp+'/'+m.lom_total+' LOM</div></div>'+
-      '<div class="mcard m-white"><div class="big num">'+m.n_med+'</div><div class="lbl">medicamentos en seguimiento</div></div>'+
-      '<div class="mcard m-amber"><div class="big num">'+m.vital_sin+'</div><div class="lbl">vitales por reponer</div></div>';
+      '<div class="mcard m-blue"><div class="big num">'+lomTot+'</div><div class="lbl">medicamentos cubiertos<br>Lista Oficial (LOM)</div></div>'+
+      '<div class="mcard m-white" style="border-color:'+pctColor2(pct)+'55"><button class="help" onclick="explicarMetrica()">ⓘ</button><div class="big num" style="color:'+pctColor2(pct)+'">'+pct+'%</div><div class="lbl">disponibles '+etiqueta+'<br>'+disp+' de '+lomTot+' · óptimo ≥90%</div></div>'+
+      '<div class="mcard m-white" style="border-color:#1d9e7555"><button class="help" onclick="explicarDias()">ⓘ</button><div class="big num" style="color:#1d9e75">'+(med==null?'—':med)+'<span style="font-size:13px"> días</span></div><div class="lbl">de abastecimiento<br>'+etiqueta+' (mediana)</div></div>';
     return;
   }
-  // inteligente: % de ESTE renglón disponible nacional / provincial / mi sector
+  // VISTA RENGLÓN: el mismo medicamento, días protagonista, nacional/provincia/sector
   const filas=(D.det[sku.cod]||[]);
   const statOf=arr=>{const t=arr.length;if(!t)return {pct:null,med:null};
     const c=arr.filter(x=>x.saldo>0).length;
@@ -296,9 +327,9 @@ function renderMetrics(sku){
     const ensector=filas.filter(x=>x.lat&&haversine(userPos[0],userPos[1],x.lat,x.lng)<=RADIO_SECTOR);
     sectN=ensector.length; sect=statOf(ensector);
   }
-  function card(lbl,st,extra){const c=st.pct==null?'#888':pctColor2(st.pct);
+  function card(lbl,st,extra){const c=st.med==null?'#888':diasColorM(st.med);
     const diasBig=st.med!=null?'<div class="big num" style="color:'+c+'">'+st.med+'<span style="font-size:13px"> días</span></div>':'<div class="big num" style="color:#888">—</div>';
-    const pctChip=st.pct!=null?'<span style="font-size:11px;color:'+c+'">'+st.pct+'% disponible</span>':'';
+    const pctChip=st.pct!=null?'<span style="font-size:11px;color:'+pctColor2(st.pct)+'">'+st.pct+'% disponible</span>':'';
     return '<div class="mcard m-white" style="border-color:'+c+'33">'+diasBig+'<div class="lbl">'+lbl+(pctChip?'<br>'+pctChip:'')+(extra?'<br>'+extra:'')+'</div></div>';}
   box.innerHTML=
     card('cobertura nacional',nac,'')+
@@ -306,6 +337,23 @@ function renderMetrics(sku){
     (userPos?card('en tu sector',sect,sectN+' unidades a ≤'+RADIO_SECTOR+'km'):card('en tu sector',{pct:null,med:null},'activa ubicación'));
 }
 function pctColor2(p){return p>=90?'#1d9e75':(p>=60?'#d89a1a':'#c0392b');}
+function diasColorM(d){return d>=90?'#1d9e75':(d>=30?'#d89a1a':'#c0392b');}
+// mediana global de días (todos los renglones LOM, opcionalmente filtrado por provincia)
+function globalMediana(prov){
+  const dd=[];const lomSet=new Set(D.sku.filter(s=>s.lom==='LOM').map(s=>s.cod));
+  Object.keys(D.det).forEach(cod=>{if(!lomSet.has(cod))return;
+    D.det[cod].forEach(x=>{if(prov&&x.prov!==prov)return;
+      if(x.saldo>0&&x.dias>0&&x.dias<9999)dd.push(x.dias);});});
+  if(!dd.length)return null;dd.sort((a,b)=>a-b);return Math.round(dd[Math.floor(dd.length/2)]);
+}
+// estadísticas de un ámbito (provincia): % LOM disponible + mediana días
+function ambitoStats(prov){
+  const lomSet=new Set(D.sku.filter(s=>s.lom==='LOM').map(s=>s.cod));
+  let con=0,tot=0;
+  lomSet.forEach(cod=>{const filas=(D.det[cod]||[]).filter(x=>x.prov===prov);
+    if(filas.length){tot++;if(filas.some(x=>x.saldo>0))con++;}});
+  return {disp:con,pct:tot?Math.round(con/tot*100):0,med:globalMediana(prov)};
+}
 
 /* ===== Inicio: UE más cercana (puntos 2+4) ===== */
 function ueMasCercana(){
@@ -317,16 +365,24 @@ function ueMasCercana(){
 }
 function renderNearby(){
   const box=document.getElementById('nearby');
-  const near=ueMasCercana();
-  if(!near){
-    // sin ubicación, pero si eligió provincia en el filtro, mostrar mapa de esa provincia
-    if(provFiltroInicio){
-      box.innerHTML='<div class="nearcard"><div class="nc-top"><i class="ti ti-map-pin"></i> Provincia: '+provFiltroInicio+'</div>'+
-        '<div class="nc-body"><div id="miniMap" style="height:220px;border-radius:8px;border:1px solid #cfd8e0"></div>'+mejoresRenglones()+'</div></div>';
-      dibujarMiniMapa(null);
-    } else { box.innerHTML=''; }
+  // Si hay filtro de provincia: tarjeta de cobertura provincial vs nacional (sin detalle de unidad)
+  if(provFiltroInicio){
+    const st=ambitoStats(provFiltroInicio);
+    const nac=parseFloat(D.meta.pct_disp)||0;
+    box.innerHTML='<div class="nearcard"><div class="nc-top"><i class="ti ti-map-pin"></i> Provincia: '+provFiltroInicio+'</div>'+
+      '<div class="nc-body"><div class="nc-name">Cobertura de '+provFiltroInicio+'</div>'+
+      '<div class="nc-loc">'+st.disp+' de '+D.meta.lom_total+' medicamentos LOM disponibles'+(st.med!=null?' · ~'+st.med+' días de abastecimiento':'')+'</div>'+
+      '<div class="nc-bars" style="margin-top:12px">'+
+        barra('Esta provincia',st.pct)+
+        barra('Nacional',nac)+
+      '</div>'+
+      '<div id="miniMap" style="height:220px;border-radius:8px;border:1px solid #cfd8e0;margin-top:12px"></div>'+
+      mejoresRenglones()+'</div></div>';
+    dibujarMiniMapa(null);
     return;
   }
+  const near=ueMasCercana();
+  if(!near){ box.innerHTML=''; return; }
   const u=near.u, nac=parseFloat(D.meta.pct_disp)||0, prov=(D.meta.prov_pct||{})[u.prov]||0;
   const cmp = u.pct>=nac ? 'por encima del promedio nacional' : 'por debajo del promedio nacional';
   box.innerHTML=
@@ -505,18 +561,21 @@ function renderMap(filas){
   const hBien=conStock.filter(x=>valOf(x.dias)>=OPT*0.6).map(x=>{const bien=Math.min(1,(valOf(x.dias)-OPT*0.6)/(OPT*0.4));return [x.lat,x.lng,Math.max(0.15,bien)];});
   if(hBien.length)heatBien=L.heatLayer(hBien,{radius:38,blur:28,minOpacity:.25,max:1.0,gradient:{0.0:'rgba(39,174,96,0)',0.5:'#7dcea0',1.0:'#1e8449'}}).addTo(map);
   if(hMal.length)heatMal=L.heatLayer(hMal,{radius:38,blur:28,minOpacity:.30,max:1.0,gradient:{0.0:'rgba(192,57,43,0)',0.4:'#f4d03f',0.7:'#e67e22',1.0:'#c0392b'}}).addTo(map);
-  const pts=[];
+  const pts=[];let primerMk=null;
   filas.forEach((x,i)=>{if(!x.lat)return;const e=estadoUE(x.saldo,x.dias,x.nivel);
     const mk=L.circleMarker([x.lat,x.lng],{radius:8,fillColor:e.col,color:'#fff',weight:1.5,fillOpacity:.95});
     const cob=x.saldo>0?('<br>'+e.et+' · '+e.cv):'<br>Sin existencia';
     const tel=x.tel?'<br><i>'+x.tel.split(';')[0]+'</i>':'';
     mk.bindPopup('<b>'+x.nombre+'</b><br>'+(x.loc||x.prov)+' · '+(x.tipo||'')+cob+'<br>Existencia: '+f(x.saldo)+tel+'<br><a href="javascript:abrirModal('+i+')">Ver más →</a>');
     mk.on('click',function(){this.openPopup();});
-    markerLayer.addLayer(mk);pts.push([x.lat,x.lng]);});
+    markerLayer.addLayer(mk);pts.push([x.lat,x.lng]);
+    if(i===0)primerMk=mk;});
   if(userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(markerLayer).bindPopup('Tu ubicación');}
   window._mapPts=pts;
   encuadrar(filas);
   setTimeout(()=>map.invalidateSize(),200);drawMapStats(filas);
+  // popup automático en la UE más cercana (primera) para mostrar que es interactivo
+  if(primerMk&&userPos)setTimeout(()=>{try{primerMk.openPopup();}catch(e){}},700);
 }
 function encuadrar(filas){
   if(!map)return;
@@ -639,48 +698,104 @@ function abrirListado(){
     return {cod:s.cod,nombre:s.nombre,sistema:s.sistema||'',vital:s.vital==='VITAL',pct:pct,med:med,ue:con,stock:Math.round(stock),cons:Math.round(cons)};
   });
   _listaSort={col:'pct',dir:'desc'}; // buenas noticias primero
+  _listaFiltros={txt:'',sistema:'',crit:''};
   renderLista();
   document.getElementById('tablaBg').classList.add('show');
 }
+let _listaFiltros={txt:'',sistema:'',crit:''};
 function renderLista(){
   const m=document.getElementById('tablaModal');
-  const rows=_listaRows.slice().sort((a,b)=>{
+  let rows=_listaRows.slice();
+  // filtros internos
+  if(_listaFiltros.txt)rows=rows.filter(r=>norm(r.nombre).includes(norm(_listaFiltros.txt)));
+  if(_listaFiltros.sistema)rows=rows.filter(r=>r.sistema===_listaFiltros.sistema);
+  if(_listaFiltros.crit==='VITAL')rows=rows.filter(r=>r.vital);
+  rows.sort((a,b)=>{
     let av=a[_listaSort.col],bv=b[_listaSort.col];
     if(_listaSort.col==='nombre'){av=norm(av);bv=norm(bv);return _listaSort.dir==='asc'?(av<bv?-1:1):(av>bv?-1:1);}
     av=av==null?-1:av;bv=bv==null?-1:bv;
     return _listaSort.dir==='asc'?av-bv:bv-av;
   });
-  function th(lbl,col,align){const act=_listaSort.col===col;const ar=act?(_listaSort.dir==='asc'?' ▲':' ▼'):'';
-    return '<th onclick="ordenarLista(\''+col+'\')" style="cursor:pointer;text-align:'+(align||'center')+';padding:8px;border-bottom:2px solid #1e5a9e;white-space:nowrap;'+(act?'color:#1e5a9e':'')+'">'+lbl+ar+'</th>';}
-  let html='<div style="padding:14px 18px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">'+
+  _listaVista=rows; // para exportar lo filtrado
+  const sistemas=[...new Set(_listaRows.map(r=>r.sistema).filter(Boolean))].sort();
+  function th(lbl,col){const act=_listaSort.col===col;const ar=act?(_listaSort.dir==='asc'?' ▲':' ▼'):'';
+    return '<th onclick="ordenarLista(\''+col+'\')" style="cursor:pointer;padding:8px;border-bottom:2px solid #1e5a9e;white-space:nowrap;'+(act?'color:#1e5a9e':'')+'">'+lbl+ar+'</th>';}
+  let html='<div style="padding:14px 18px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
     '<div><div style="font-size:17px;font-weight:600;color:#0C447C">Listado nacional consolidado</div>'+
-    '<div style="font-size:12px;color:#666">'+_listaRows.length+' medicamentos de la Lista Oficial · toca una columna para ordenar · toca una fila para ver detalle por unidad</div></div>'+
-    '<button onclick="cerrarTabla()" style="background:#0C447C;color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer">×</button></div>'+
-    '<div style="padding:8px 18px;border-bottom:1px solid #eee"><input id="tablaFiltro" placeholder="Filtrar medicamento…" oninput="filtrarTabla()" style="width:100%;padding:8px 12px;border:1px solid #a8a8a8;border-radius:6px;font-size:14px"/></div>'+
-    '<div style="overflow:auto;flex:1"><table id="tablaNac" style="width:100%;border-collapse:collapse;font-size:13px">'+
-    '<thead style="position:sticky;top:0;background:#f4f6f8"><tr>'+
-    th('Medicamento','nombre','left')+th('Disponib.','pct')+th('Cobertura','med')+th('UE con stock','ue')+th('Consumo/día','cons')+th('Existencia','stock')+
+    '<div style="font-size:12px;color:#666">'+rows.length+' de '+_listaRows.length+' medicamentos LOM · toca una fila para ver detalle por unidad</div></div>'+
+    '<button onclick="cerrarTabla()" style="background:#0C447C;color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;flex-shrink:0">×</button></div>'+
+    // filtros internos + descarga
+    '<div style="padding:10px 18px;border-bottom:1px solid #eee;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+      '<input id="tablaFiltro" value="'+_listaFiltros.txt+'" placeholder="Filtrar medicamento…" oninput="setListaFiltro(\'txt\',this.value)" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #a8a8a8;border-radius:6px;font-size:14px"/>'+
+      '<select onchange="setListaFiltro(\'sistema\',this.value)" style="padding:8px;border:1px solid #a8a8a8;border-radius:6px;font-size:13px"><option value="">Todo sistema</option>'+sistemas.map(s=>'<option'+(s===_listaFiltros.sistema?' selected':'')+'>'+s+'</option>').join('')+'</select>'+
+      '<select onchange="setListaFiltro(\'crit\',this.value)" style="padding:8px;border:1px solid #a8a8a8;border-radius:6px;font-size:13px"><option value="">Toda criticidad</option><option value="VITAL"'+(_listaFiltros.crit==='VITAL'?' selected':'')+'>Solo vitales</option></select>'+
+      '<button onclick="descargarExcel()" style="background:#1d7349;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap"><i class="ti ti-download"></i> Descargar Excel</button>'+
+    '</div>'+
+    '<div style="overflow:auto;flex:1" class="lista-scroll"><table id="tablaNac" style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead style="position:sticky;top:0;background:#f4f6f8;z-index:2"><tr style="text-align:center">'+
+    '<th style="text-align:left;padding:8px 10px;border-bottom:2px solid #1e5a9e;cursor:pointer" onclick="ordenarLista(\'nombre\')">Medicamento'+(_listaSort.col==='nombre'?(_listaSort.dir==='asc'?' ▲':' ▼'):'')+'</th>'+
+    th('Disponib.','pct')+th('Cobertura','med')+th('UE','ue')+th('Consumo/día','cons')+th('Existencia','stock')+
     '</tr></thead><tbody>';
   rows.forEach(r=>{const c=r.pct>=90?'#1d9e75':(r.pct>=60?'#d89a1a':'#c0392b');
-    html+='<tr class="trow" data-n="'+norm(r.nombre)+'" onclick="detalleRenglon(\''+r.cod+'\')" style="cursor:pointer">'+
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee">'+(r.vital?'<span style="color:#b03a2e">★ </span>':'')+r.nombre+(r.sistema?'<br><span style="font-size:11px;color:#888">'+r.sistema+'</span>':'')+'</td>'+
-      '<td style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace;font-weight:700;color:'+c+'">'+r.pct+'%</td>'+
-      '<td style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+(r.med!=null?'~'+r.med+' días':'—')+'</td>'+
-      '<td style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+r.ue+'</td>'+
-      '<td style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+f(r.cons)+'</td>'+
-      '<td style="text-align:right;padding:7px 10px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+f(r.stock)+'</td></tr>';
+    html+='<tr class="trow" onclick="detalleRenglon(\''+r.cod+'\')" style="cursor:pointer">'+
+      '<td data-lbl="" style="padding:7px 10px;border-bottom:1px solid #eee">'+(r.vital?'<span style="color:#b03a2e">★ </span>':'')+r.nombre+(r.sistema?'<br><span style="font-size:11px;color:#888">'+r.sistema+'</span>':'')+'</td>'+
+      '<td data-lbl="Disponib." style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace;font-weight:700;color:'+c+'">'+r.pct+'%</td>'+
+      '<td data-lbl="Cobertura" style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+(r.med!=null?'~'+r.med+'d':'—')+'</td>'+
+      '<td data-lbl="UE con stock" style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+r.ue+'</td>'+
+      '<td data-lbl="Consumo/día" style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+f(r.cons)+'</td>'+
+      '<td data-lbl="Existencia" style="text-align:right;padding:7px 10px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+f(r.stock)+'</td></tr>';
   });
   html+='</tbody></table></div>';
   m.innerHTML=html;
 }
+let _listaVista=[];
+function setListaFiltro(k,v){_listaFiltros[k]=v;const foco=(k==='txt');renderLista();
+  if(foco){const i=document.getElementById('tablaFiltro');if(i){i.focus();i.setSelectionRange(v.length,v.length);}}}
 function ordenarLista(col){
   if(_listaSort.col===col){_listaSort.dir=_listaSort.dir==='asc'?'desc':'asc';}
   else{_listaSort.col=col;_listaSort.dir=(col==='nombre')?'asc':'desc';}
   renderLista();
 }
-function filtrarTabla(){const v=norm(document.getElementById('tablaFiltro').value);
-  [].forEach.call(document.querySelectorAll('.trow'),tr=>{tr.style.display=tr.getAttribute('data-n').includes(v)?'':'none';});}
 function cerrarTabla(){document.getElementById('tablaBg').classList.remove('show');}
+
+/* Descarga Excel con formato dashboard */
+async function descargarExcel(){
+  if(typeof ExcelJS==='undefined'){alert('Cargando librería, intenta de nuevo en un momento.');return;}
+  const wb=new ExcelJS.Workbook();
+  wb.creator='Mi Farma Digital - CSS';
+  const ws=wb.addWorksheet('Disponibilidad LOM',{views:[{state:'frozen',ySplit:4}]});
+  // título
+  ws.mergeCells('A1:F1');
+  ws.getCell('A1').value='MI FARMA DIGITAL — Caja de Seguro Social de Panamá';
+  ws.getCell('A1').font={bold:true,size:15,color:{argb:'FF0C447C'}};
+  ws.getCell('A1').alignment={horizontal:'center'};
+  ws.mergeCells('A2:F2');
+  ws.getCell('A2').value='Disponibilidad nacional de medicamentos de la Lista Oficial (LOM) — '+D.meta.fecha;
+  ws.getCell('A2').font={size:11,color:{argb:'FF555555'}};
+  ws.getCell('A2').alignment={horizontal:'center'};
+  ws.addRow([]);
+  // encabezados
+  const head=['Medicamento','Sistema / Uso','Vital','Disponibilidad %','Cobertura (días)','UE con stock','Consumo/día','Existencia total'];
+  const hr=ws.addRow(head);
+  hr.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5A9E'}};c.alignment={horizontal:'center',wrapText:true};c.border={bottom:{style:'thin'}};});
+  // datos (lo filtrado/visible)
+  _listaVista.forEach(r=>{
+    const row=ws.addRow([r.nombre,r.sistema,r.vital?'Sí':'',r.pct/100,r.med!=null?r.med:'—',r.ue,r.cons,r.stock]);
+    row.getCell(4).numFmt='0%';
+    const col=r.pct>=90?'FF1D9E75':(r.pct>=60?'FFD89A1A':'FFC0392B');
+    row.getCell(4).font={bold:true,color:{argb:col}};
+    row.getCell(3).alignment={horizontal:'center'};
+    [5,6,7,8].forEach(i=>row.getCell(i).alignment={horizontal:'center'});
+    if(r.vital)row.getCell(1).font={color:{argb:'FFB03A2E'}};
+  });
+  ws.columns=[{width:50},{width:28},{width:7},{width:15},{width:15},{width:13},{width:13},{width:16}];
+  ws.autoFilter='A4:H4';
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='MiFarmaDigital_LOM_'+D.meta.fecha.replace(/[ :]/g,'_')+'.xlsx';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
 
 /* Detalle de un renglón por UE (escrutinio total, tipo el otro equipo) */
 function detalleRenglon(cod){
@@ -723,8 +838,12 @@ function infoModal(html){const m=document.getElementById('modal');m.classList.ad
   document.getElementById('modalBg').classList.add('show');}
 function explicarMetrica(){infoModal(
   '<h4>¿Cómo se calcula la disponibilidad?</h4>'+
-  '<p>Es el porcentaje de medicamentos de la <b>Lista Oficial (LOM)</b> que tienen existencia en al menos una unidad de la red, a nivel nacional.</p>'+
+  '<p>Es el porcentaje de medicamentos de la <b>Lista Oficial (LOM)</b> que tienen existencia en al menos una unidad de la red.</p>'+
   '<p>Se considera <b>óptimo por encima de 90%</b>. No incluye medicamentos fuera de la Lista Oficial.</p>');}
+function explicarDias(){infoModal(
+  '<h4>¿Cómo se calculan los días de abastecimiento?</h4>'+
+  '<p>Es una estimación de cuántos días alcanza el inventario actual, según el ritmo de consumo reciente.</p>'+
+  '<p>Se muestra la <b>mediana</b> de las unidades con existencia, para reflejar el caso típico sin distorsión por valores extremos.</p>');}
 function explicarPerfil(){infoModal(
   '<h4>Perfil del medicamento</h4>'+
   '<p>Estas etiquetas describen el rol del medicamento en la red, en lenguaje sencillo:</p>'+
