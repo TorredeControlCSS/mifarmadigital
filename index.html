@@ -302,14 +302,14 @@ function renderMetrics(sku){
     // Si hay filtro de provincia en inicio, las cifras se adaptan a esa provincia
     const ambito = provFiltroInicio || null;
     let lomTot=m.lom_total, disp=m.lom_disp, pct=parseFloat(m.pct_disp)||0, etiqueta='nacional';
-    let med=globalMediana(null);
+    let med = (m.dias_agregado!=null ? m.dias_agregado : globalMediana(null));
     if(ambito){
       const st=ambitoStats(ambito);lomTot=m.lom_total;disp=st.disp;pct=st.pct;med=st.med;etiqueta=ambito;
     }
     box.innerHTML=
       '<div class="mcard m-blue"><div class="big num">'+lomTot+'</div><div class="lbl">medicamentos cubiertos<br>Lista Oficial (LOM)</div></div>'+
       '<div class="mcard m-white" style="border-color:'+pctColor2(pct)+'55"><button class="help" onclick="explicarMetrica()">ⓘ</button><div class="big num" style="color:'+pctColor2(pct)+'">'+pct+'%</div><div class="lbl">disponibles '+etiqueta+'<br>'+disp+' de '+lomTot+' · óptimo ≥90%</div></div>'+
-      '<div class="mcard m-white" style="border-color:#1d9e7555"><button class="help" onclick="explicarDias()">ⓘ</button><div class="big num" style="color:#1d9e75">'+(med==null?'—':med)+'<span style="font-size:13px"> días</span></div><div class="lbl">de abastecimiento<br>'+etiqueta+' (mediana)</div></div>';
+      '<div class="mcard m-white" style="border-color:#1d9e7555"><button class="help" onclick="explicarDias()">ⓘ</button><div class="big num" style="color:#1d9e75">'+(med==null?'—':med)+'<span style="font-size:13px"> días</span></div><div class="lbl">de abastecimiento<br>'+etiqueta+(ambito?'':' (nacional)')+'</div></div>';
     return;
   }
   // VISTA RENGLÓN: el mismo medicamento, días protagonista, nacional/provincia/sector
@@ -841,10 +841,16 @@ function explicarMetrica(){infoModal(
   '<h4>¿Cómo se calcula la disponibilidad?</h4>'+
   '<p>Es el porcentaje de medicamentos de la <b>Lista Oficial (LOM)</b> que tienen existencia en al menos una unidad de la red.</p>'+
   '<p>Se considera <b>óptimo por encima de 90%</b>. No incluye medicamentos fuera de la Lista Oficial.</p>');}
-function explicarDias(){infoModal(
+function explicarDias(){
+  const m=D.meta;
+  infoModal(
   '<h4>¿Cómo se calculan los días de abastecimiento?</h4>'+
-  '<p>Es una estimación de cuántos días alcanza el inventario actual, según el ritmo de consumo reciente.</p>'+
-  '<p>Se muestra la <b>mediana</b> de las unidades con existencia, para reflejar el caso típico sin distorsión por valores extremos.</p>');}
+  '<p>Estima para cuántos días alcanza el inventario disponible si se sigue consumiendo al ritmo reciente.</p>'+
+  '<table class="deftbl">'+
+  '<tr><td>Vista agregada</td><td>'+(m.dias_agregado!=null?m.dias_agregado+' días':'—')+' — inventario nacional total dividido entre la demanda diaria nacional. Refleja la capacidad del sistema.</td></tr>'+
+  '<tr><td>Medicamento típico</td><td>'+(m.dias_mediana!=null?m.dias_mediana+' días':'—')+' — la mediana: la mitad de los medicamentos están por encima y la mitad por debajo.</td></tr>'+
+  '</table>'+
+  '<p style="font-size:12px;color:#666"><b>Nota metodológica:</b> el inventario incluye el de la red de distribución central; la demanda considera el movimiento de las unidades de atención. Es una estimación de referencia mientras se consolidan los datos de consumo por receta.</p>');}
 function explicarPerfil(){infoModal(
   '<h4>Perfil del medicamento</h4>'+
   '<p>Estas etiquetas describen el rol del medicamento en la red, en lenguaje sencillo:</p>'+
