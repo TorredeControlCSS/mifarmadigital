@@ -2,289 +2,323 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Mi Farma Digital — Caja de Seguro Social</title>
+<meta name="theme-color" content="#0C447C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Farma Digital">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:#ececec;color:#222;line-height:1.5}
+  body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:#ececec;color:#222;line-height:1.45;-webkit-text-size-adjust:100%}
   .num{font-family:Consolas,'Courier New',monospace}
-  a{color:inherit}
-  /* Header */
-  header{background:#0C447C;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
-  .brand{display:flex;align-items:center;gap:12px}
-  .brand .logo{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:#0C447C;font-weight:700;font-size:11px}
-  .brand .sub{color:#9fc4ec;font-size:11px;letter-spacing:.4px}
-  .brand .ttl{color:#fff;font-size:18px;font-weight:600}
-  .hdr-right{color:#9fc4ec;font-size:12px}
-  /* Layout */
-  .wrap{max-width:1100px;margin:0 auto;padding:20px}
-  .hero{text-align:center;margin:8px 0 18px}
-  .hero h1{font-size:22px;color:#0C447C;font-weight:600}
-  .hero p{font-size:14px;color:#555;margin-top:4px}
-  /* Search */
-  .searchbar{display:flex;gap:8px;margin:14px 0 10px}
-  .searchbox{flex:1;display:flex;align-items:center;background:#fff;border:1px solid #1e5a9e;border-radius:8px;padding:0 14px;height:48px}
-  .searchbox input{border:none;outline:none;flex:1;font-size:16px;margin-left:10px;background:transparent}
-  .btn{background:#1e5a9e;color:#fff;border:none;border-radius:8px;padding:0 20px;font-size:15px;font-weight:600;cursor:pointer;height:48px}
-  .btn:hover{background:#174a85}
-  .btn-ghost{background:#fff;border:1px solid #1e5a9e;color:#1e5a9e;border-radius:8px;padding:0 16px;font-weight:600;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;height:48px}
-  .btn-ghost:hover{background:#f0f6fc}
-  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-  .filters select{padding:8px 12px;border:1px solid #a8a8a8;border-radius:6px;background:#fff;font-size:13px;color:#333}
-  /* Metric cards */
-  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
-  .mcard{border-radius:10px;padding:14px 16px}
-  .mcard .big{font-size:30px;font-weight:700;line-height:1}
-  .mcard .lbl{font-size:12px;margin-top:6px}
-  .m-blue{background:#0C447C;color:#fff}
-  .m-blue .lbl{color:#9fc4ec}
-  .m-white{background:#fff;border:1px solid #a8a8a8}
-  .m-white .big{color:#1d9e75}
-  .m-white .lbl{color:#555}
-  .m-amber{background:#fff;border:1px solid #d89a1a}
-  .m-amber .big{color:#ba7517}
-  .m-amber .lbl{color:#555}
-  /* Selected med header */
-  .medhead{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1e5a9e;padding-bottom:8px;margin:14px 0 12px;flex-wrap:wrap;gap:8px}
+  header{background:#0C447C;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1100}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand img{height:38px;width:auto;display:block}
+  .brand .sub{color:#9fc4ec;font-size:10px;letter-spacing:.4px}
+  .brand .ttl{color:#fff;font-size:16px;font-weight:600;line-height:1.1}
+  .hdr-right{color:#9fc4ec;font-size:11px}
+  #btnInstall{display:none;background:#fff;color:#0C447C;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer}
+  .wrap{max-width:1100px;margin:0 auto;padding:14px 16px 40px}
+  .hero{text-align:center;margin:6px 0 12px}
+  .hero h1{font-size:19px;color:#0C447C;font-weight:600}
+  .hero p{font-size:13px;color:#555;margin-top:2px}
+  .searchbar{display:flex;gap:8px;margin:10px 0 8px;position:relative}
+  .searchbox{flex:1;display:flex;align-items:center;background:#fff;border:1px solid #1e5a9e;border-radius:8px;padding:0 12px;height:46px}
+  .searchbox input{border:none;outline:none;flex:1;font-size:16px;margin-left:8px;background:transparent}
+  .btn{background:#1e5a9e;color:#fff;border:none;border-radius:8px;padding:0 18px;font-size:15px;font-weight:600;cursor:pointer;height:46px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .filters select{padding:7px 10px;border:1px solid #a8a8a8;border-radius:6px;background:#fff;font-size:13px;color:#333}
+  .btn-ghost{background:#fff;border:1px solid #1e5a9e;color:#1e5a9e;border-radius:6px;padding:7px 12px;font-weight:600;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+  .btn-ghost.active{background:#1e5a9e;color:#fff}
+  .metrics{display:flex;gap:8px;margin-bottom:16px}
+  .mcard{flex:1;border-radius:8px;padding:9px 12px;display:flex;flex-direction:column;justify-content:center;min-height:54px}
+  .mcard .big{font-size:21px;font-weight:700;line-height:1}
+  .mcard .lbl{font-size:10.5px;margin-top:3px;line-height:1.2}
+  .m-blue{background:#0C447C;color:#fff}.m-blue .lbl{color:#9fc4ec}
+  .m-white{background:#fff;border:1px solid #a8a8a8}.m-white .big{color:#1d9e75}.m-white .lbl{color:#666}
+  .m-amber{background:#fff;border:1px solid #d89a1a}.m-amber .big{color:#ba7517}.m-amber .lbl{color:#666}
+  .medhead{margin:10px 0 10px}
+  .medhead .toprow{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:2px solid #1e5a9e;padding-bottom:7px;flex-wrap:wrap}
   .medhead .name{font-size:16px;font-weight:600;color:#0C447C}
-  .tags{display:flex;gap:6px;flex-wrap:wrap}
-  .tag{font-size:11px;font-weight:600;padding:4px 10px;border-radius:14px}
+  .tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:13px;display:inline-flex;align-items:center;gap:4px}
   .t-lom{background:#e6f1fb;color:#0C447C}
-  .t-vital{background:#e1f5ee;color:#0f6e56}
-  .t-cat{background:#f1efe8;color:#444}
   .t-nolom{background:#faeee0;color:#a05a12}
-  /* Map */
-  #map{height:300px;border:1px solid #a8a8a8;border-radius:8px;margin-bottom:6px}
-  .legend{display:flex;gap:14px;font-size:11px;color:#666;margin-bottom:14px;flex-wrap:wrap}
+  .t-vital{background:#fbe9e7;color:#b03a2e}
+  .t-cat{background:#f1efe8;color:#444}
+  .sello{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:#666;align-items:center}
+  .sello .chip{background:#f4f6f8;border:1px solid #dde3e8;border-radius:6px;padding:3px 8px;display:inline-flex;gap:4px;align-items:center}
+  .sello .chip b{color:#0C447C;font-family:Consolas,monospace}
+  #map{height:300px;border:1px solid #a8a8a8;border-radius:8px;margin-bottom:8px;z-index:1}
+  .map-stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .map-stats .st{flex:1;min-width:90px;background:#fff;border:1px solid #d8d8d8;border-radius:6px;padding:6px 8px;text-align:center}
+  .map-stats .st .v{font-size:18px;font-weight:700;font-family:Consolas,monospace;line-height:1}
+  .map-stats .st .l{font-size:9.5px;color:#666;margin-top:2px;line-height:1.15}
+  .legend{display:flex;gap:12px;font-size:11px;color:#666;margin-bottom:12px;flex-wrap:wrap}
   .legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
-  /* Result cards */
-  .scope{font-size:13px;color:#666;margin-bottom:10px}
-  .results{display:flex;flex-direction:column;gap:9px}
-  .rcard{background:#fff;border:1px solid #a8a8a8;border-radius:6px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .scope{font-size:12.5px;color:#666;margin-bottom:9px}
+  .results{display:flex;flex-direction:column;gap:8px}
+  .rcard{background:#fff;border:1px solid #a8a8a8;border-radius:6px;padding:11px 13px;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;transition:background .12s}
+  .rcard:hover,.rcard:focus{background:#f0f6fc;outline:none}
   .rcard .info .nm{font-size:14px;font-weight:600}
   .rcard .info .meta{font-size:12px;color:#666;margin-top:3px}
   .rcard .info .meta i{color:#1e5a9e}
   .rcard .stat{text-align:right;white-space:nowrap}
-  .rcard .stat .st{font-size:12px;font-weight:600}
+  .rcard .stat .st{font-size:12.5px;font-weight:600}
   .rcard .stat .cv{font-size:11px;color:#888;margin-top:2px}
-  .nivel-ALTA,.nivel-ADECUADA{border-left:5px solid #1d9e75}
-  .nivel-SEGUIMIENTO{border-left:5px solid #d89a1a}
-  .nivel-REDUCIDA{border-left:5px solid #d89a1a}
-  .nivel-SINEXISTENCIA{border-left:5px solid #c0392b}
-  .st-ok{color:#1d9e75}.st-warn{color:#ba7517}.st-bad{color:#c0392b}
-  .empty{padding:30px;text-align:center;color:#888;font-size:14px}
-  .suggest{position:absolute;background:#fff;border:1px solid #1e5a9e;border-top:none;border-radius:0 0 8px 8px;max-height:280px;overflow-y:auto;z-index:900;width:100%}
+  .n-ok{border-left:5px solid #1d9e75}.n-warn{border-left:5px solid #d89a1a}.n-bad{border-left:5px solid #c0392b}
+  .s-ok{color:#1d9e75}.s-warn{color:#ba7517}.s-bad{color:#c0392b}
+  .empty{padding:24px;text-align:center;color:#888;font-size:14px}
+  .welcome{background:#fff;border:1px solid #cfd8e0;border-radius:10px;padding:18px;margin-bottom:14px}
+  .welcome h3{font-size:15px;color:#0C447C;margin-bottom:8px;font-weight:600}
+  .chips-quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .chip-q{background:#e6f1fb;color:#0C447C;border:none;border-radius:16px;padding:7px 13px;font-size:13px;cursor:pointer;font-weight:600}
+  .chip-q:hover{background:#d2e6fa}
+  .suggest{position:absolute;top:48px;left:0;right:88px;background:#fff;border:1px solid #1e5a9e;border-top:none;border-radius:0 0 8px 8px;max-height:300px;overflow-y:auto;z-index:1000}
   .suggest div{padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid #eee}
   .suggest div:hover{background:#f0f6fc}
   .sg-tag{font-size:10px;color:#888;margin-left:6px}
-  .loading{padding:40px;text-align:center;color:#1e5a9e}
-  footer{text-align:center;font-size:11px;color:#888;padding:16px}
-  @media(max-width:640px){.metrics{grid-template-columns:1fr}.hdr-right{display:none}}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:flex-end;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:#fff;border-radius:14px 14px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:0 0 16px}
+  .modal .mhead{position:relative;height:150px;background:#0C447C;border-radius:14px 14px 0 0;overflow:hidden}
+  .modal .mhead img{width:100%;height:100%;object-fit:cover}
+  .modal .mclose{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer}
+  .modal .mbody{padding:14px 18px}
+  .modal .mname{font-size:17px;font-weight:600;color:#0C447C}
+  .modal .mloc{font-size:13px;color:#666;margin-top:2px}
+  .modal .mstat{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:14px;font-weight:600;padding:5px 12px;border-radius:8px}
+  .modal .mrow{display:flex;align-items:center;gap:8px;font-size:14px;padding:9px 0;border-top:1px solid #eee;color:#333}
+  .modal .mrow i{color:#1e5a9e;font-size:18px;width:20px;text-align:center}
+  .modal .mact{display:flex;gap:8px;margin-top:14px}
+  .modal .mact a{flex:1;text-align:center;text-decoration:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600}
+  .mact .call{background:#1d9e75;color:#fff}
+  .mact .route{background:#1e5a9e;color:#fff}
+  @media(min-width:560px){.modal-bg{align-items:center}.modal{border-radius:14px}}
 </style>
 </head>
 <body>
-
 <header>
   <div class="brand">
-    <div class="logo">CSS</div>
-    <div>
-      <div class="sub">Búsqueda de medicamentos</div>
-      <div class="ttl">Mi Farma Digital</div>
-    </div>
+    <img src="icons/icon-192.png" alt="Caja de Seguro Social"/>
+    <div><div class="sub">Búsqueda de medicamentos</div><div class="ttl">Mi Farma Digital</div></div>
   </div>
-  <div class="hdr-right">Caja de Seguro Social · República de Panamá</div>
+  <button id="btnInstall">Instalar app</button>
+  <div class="hdr-right">Caja de Seguro Social · Panamá</div>
 </header>
 
 <div class="wrap">
+  <div class="hero"><h1>¿Buscas tu medicina?</h1><p>Te decimos si hay y dónde está la unidad más cercana a ti.</p></div>
 
-  <div class="hero">
-    <h1>¿Buscas tu medicina?</h1>
-    <p>Te decimos si hay y dónde está la unidad más cercana a ti.</p>
-  </div>
-
-  <div class="searchbar" style="position:relative">
-    <div class="searchbox">
-      <i class="ti ti-search" style="color:#1e5a9e;font-size:20px"></i>
-      <input id="q" placeholder="Escriba el medicamento…" autocomplete="off"/>
-      <div id="suggest" class="suggest" style="display:none"></div>
-    </div>
+  <div class="searchbar">
+    <div class="searchbox"><i class="ti ti-search" style="color:#1e5a9e;font-size:20px"></i>
+      <input id="q" placeholder="Escriba el medicamento…" autocomplete="off"/></div>
     <button class="btn" onclick="doSearch()">Buscar</button>
+    <div id="suggest" class="suggest" style="display:none"></div>
   </div>
 
   <div class="filters">
-    <button class="btn-ghost" style="height:auto;padding:8px 14px" onclick="useGeo()"><i class="ti ti-map-pin"></i> Usar mi ubicación</button>
+    <button class="btn-ghost" id="btnGeo" onclick="useGeo()"><i class="ti ti-map-pin"></i> Usar mi ubicación</button>
     <select id="fProv"><option value="">Todas las provincias</option></select>
     <select id="fTipo"><option value="">Todo tipo de unidad</option></select>
   </div>
 
   <div class="metrics" id="metrics"></div>
-
   <div id="medhead"></div>
   <div id="map" style="display:none"></div>
+  <div class="map-stats" id="mapStats" style="display:none"></div>
   <div class="legend" id="legend" style="display:none">
     <span><span class="dot" style="background:#1d9e75"></span>Disponible</span>
-    <span><span class="dot" style="background:#d89a1a"></span>Cobertura baja</span>
+    <span><span class="dot" style="background:#d89a1a"></span>Quedan pocas</span>
     <span><span class="dot" style="background:#c0392b"></span>Sin existencia</span>
     <span><span class="dot" style="background:#1e5a9e"></span>Tu ubicación</span>
   </div>
   <div class="scope" id="scope"></div>
+  <div id="welcome"></div>
   <div class="results" id="results"></div>
-
 </div>
 
-<footer>Caja de Seguro Social · Dirección Nacional de Logística — Datos al <span id="fecha"></span></footer>
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)cerrarModal()"><div class="modal" id="modal"></div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-let D=null, map=null, markers=[], userPos=null, selected=null;
-
-// Vía principal: data.json servido por GitHub Pages (CDN, aguanta tráfico nacional).
-// Fallback: endpoint GAS (Web App). Pega aquí la URL .../exec si quieres respaldo en vivo.
+const OPT=90;
+let D=null,map=null,heatMal=null,heatBien=null,markerLayer=null,userPos=null,selected=null,deferredPrompt=null;
+function norm(s){return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();}
+function f(n){return (n==null||n==='')?'—':Number(n).toLocaleString('es-PA');}
+function haversine(a,b,c,d){const R=6371,r=Math.PI/180;const dla=(c-a)*r,dlo=(d-b)*r;const x=Math.sin(dla/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dlo/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 const API_URL='';
 
-function norm(s){return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();}
-function haversine(a,b,c,d){const R=6371,r=Math.PI/180;const dla=(c-a)*r,dlo=(d-b)*r;const x=Math.sin(dla/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dlo/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
-
-// 1) data.json del CDN (GitHub Pages). 2) si falla, endpoint GAS por JSONP.
-function cargarData(){
-  return new Promise((resolve,reject)=>{
-    fetch('data.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;return r.json();})
-      .then(j=>(j&&j.sku)?resolve(j):viaGAS(resolve,reject))
-      .catch(()=>viaGAS(resolve,reject));
-  });
-}
-function viaGAS(resolve,reject){
-  if(!API_URL){ return reject(new Error('sin datos')); }
-  const cb='__mfd_'+Date.now();
-  const sc=document.createElement('script');
-  let done=false;
-  const to=setTimeout(()=>{ if(!done){done=true;cleanup();reject(new Error('timeout'));} },8000);
-  function cleanup(){ clearTimeout(to); delete window[cb]; if(sc.parentNode)sc.parentNode.removeChild(sc); }
-  window[cb]=(j)=>{ if(done)return; done=true; cleanup(); (j&&j.sku)?resolve(j):reject(new Error('vacío')); };
-  sc.onerror=()=>{ if(!done){done=true;cleanup();reject(new Error('error'));} };
-  sc.src=API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'action=getData&callback='+cb;
-  document.body.appendChild(sc);
+function estadoUE(saldo,dias,nivel){
+  if(saldo<=0||nivel==='SIN EXISTENCIA')return {clr:'bad',col:'#c0392b',et:'Sin existencia',cv:'consulta otra unidad'};
+  if(dias>=9999||nivel==='SIN CONSUMO (con stock)')return {clr:'ok',col:'#1d9e75',et:'Disponible',cv:'hay existencias'};
+  const dtxt=Math.round(dias)+' días';
+  if(dias>=30)return {clr:'ok',col:'#1d9e75',et:'Disponible',cv:'alcanza ~'+dtxt};
+  return {clr:'warn',col:'#d89a1a',et:'Quedan pocas',cv:'alcanza ~'+dtxt};
 }
 
-cargarData().then(j=>{D=j;boot();})
-  .catch(e=>{document.getElementById('results').innerHTML='<div class="empty">No se pudo cargar la información. Intente más tarde.</div>';console.error(e);});
+function cargarData(){return new Promise((res,rej)=>{
+  fetch('data.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;return r.json();})
+    .then(j=>(j&&j.sku)?res(j):viaGAS(res,rej)).catch(()=>viaGAS(res,rej));});}
+function viaGAS(res,rej){if(!API_URL)return rej(new Error('sin datos'));
+  const cb='__mfd_'+Date.now(),sc=document.createElement('script');let done=false;
+  const to=setTimeout(()=>{if(!done){done=true;cl();rej(new Error('timeout'));}},8000);
+  function cl(){clearTimeout(to);delete window[cb];if(sc.parentNode)sc.parentNode.removeChild(sc);}
+  window[cb]=j=>{if(done)return;done=true;cl();(j&&j.sku)?res(j):rej(new Error('vacío'));};
+  sc.onerror=()=>{if(!done){done=true;cl();rej(new Error('error'));}};
+  sc.src=API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'action=getData&callback='+cb;document.body.appendChild(sc);}
+
+cargarData().then(j=>{D=j;boot();}).catch(e=>{document.getElementById('results').innerHTML='<div class="empty">No se pudo cargar la información. Intente más tarde.</div>';console.error(e);});
 
 function boot(){
-  document.getElementById('fecha').textContent=D.meta.fecha;
-  // métricas
   const m=D.meta;
-  document.getElementById('metrics').innerHTML=`
-    <div class="mcard m-blue"><div class="big num">${m.pct_disp}</div><div class="lbl">de medicamentos disponibles<br>${m.lom_disp} de ${m.lom_total} de la Lista Oficial</div></div>
-    <div class="mcard m-white"><div class="big num">${m.n_med}</div><div class="lbl">medicamentos en seguimiento<br>cobertura por unidad ejecutora</div></div>
-    <div class="mcard m-amber"><div class="big num">${m.vital_sin}</div><div class="lbl">medicamentos <b>vitales</b><br>requieren reposición</div></div>`;
-  // filtros
-  const fp=document.getElementById('fProv');D.provincias.forEach(p=>fp.innerHTML+=`<option>${p}</option>`);
-  const ft=document.getElementById('fTipo');D.tipos.forEach(t=>ft.innerHTML+=`<option>${t}</option>`);
+  document.getElementById('metrics').innerHTML=
+    '<div class="mcard m-blue"><div class="big num">'+m.pct_disp+'</div><div class="lbl">disponibles · '+m.lom_disp+'/'+m.lom_total+' LOM</div></div>'+
+    '<div class="mcard m-white"><div class="big num">'+m.n_med+'</div><div class="lbl">medicamentos en seguimiento</div></div>'+
+    '<div class="mcard m-amber"><div class="big num">'+m.vital_sin+'</div><div class="lbl">vitales por reponer</div></div>';
+  const fp=document.getElementById('fProv');D.provincias.forEach(p=>fp.innerHTML+='<option>'+p+'</option>');
+  const ft=document.getElementById('fTipo');D.tipos.forEach(t=>ft.innerHTML+='<option>'+t+'</option>');
   fp.onchange=ft.onchange=()=>{if(selected)renderResults();};
-  // autocompletar
   const q=document.getElementById('q'),sg=document.getElementById('suggest');
-  q.addEventListener('input',()=>{
-    const v=norm(q.value);if(v.length<2){sg.style.display='none';return;}
+  q.addEventListener('input',()=>{const v=norm(q.value);if(v.length<2){sg.style.display='none';return;}
     const hits=D.sku.filter(s=>norm(s.nombre).includes(v)).slice(0,12);
     if(!hits.length){sg.style.display='none';return;}
-    sg.innerHTML=hits.map(s=>`<div onclick="pick('${s.cod}')">${s.nombre}<span class="sg-tag">${s.lom==='LOM'?'LOM':'No-LOM'}${s.vital==='VITAL'?' · Vital':''}</span></div>`).join('');
-    sg.style.display='block';
-  });
+    sg.innerHTML=hits.map(s=>'<div onclick="pick(\''+s.cod+'\')">'+s.nombre+'<span class="sg-tag">'+s.lom+(s.vital==='VITAL'?' · Vital':'')+'</span></div>').join('');
+    sg.style.display='block';});
   q.addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
-  document.addEventListener('click',e=>{if(!e.target.closest('.searchbox'))sg.style.display='none';});
+  document.addEventListener('click',e=>{if(!e.target.closest('.searchbar'))sg.style.display='none';});
+  renderWelcome();
+  pedirGeoSilencioso();
 }
 
-function doSearch(){
-  const v=norm(document.getElementById('q').value);
-  if(v.length<2)return;
-  const hit=D.sku.find(s=>norm(s.nombre)===v)||D.sku.find(s=>norm(s.nombre).includes(v));
-  if(hit)pick(hit.cod);
+function renderWelcome(){if(selected)return;
+  const vitales=D.sku.filter(s=>s.vital==='VITAL'&&s.lom==='LOM').slice(0,6);
+  document.getElementById('welcome').innerHTML=
+    '<div class="welcome"><h3>Empieza buscando un medicamento</h3>'+
+    '<div style="font-size:13px;color:#555">Escribe el nombre arriba, o consulta uno de los más frecuentes:</div>'+
+    '<div class="chips-quick">'+vitales.map(s=>'<button class="chip-q" onclick="pick(\''+s.cod+'\')">'+s.nombre.split(',')[0]+'</button>').join('')+'</div></div>';
 }
-function pick(cod){
-  selected=D.sku.find(s=>s.cod===cod);
-  document.getElementById('q').value=selected.nombre;
-  document.getElementById('suggest').style.display='none';
-  renderHead();renderResults();
-  document.getElementById('medhead').scrollIntoView({behavior:'smooth',block:'start'});
-}
-function renderHead(){
-  const s=selected;
-  let tags=`<span class="tag ${s.lom==='LOM'?'t-lom':'t-nolom'}">${s.lom}</span>`;
-  if(s.vital==='VITAL')tags+=`<span class="tag t-vital"><i class="ti ti-heart"></i> Vital</span>`;
-  if(s.sistema)tags+=`<span class="tag t-cat">${s.sistema}</span>`;
-  document.getElementById('medhead').innerHTML=`<div class="medhead"><div class="name">${s.nombre}</div><div class="tags">${tags}</div></div>`;
+function doSearch(){const v=norm(document.getElementById('q').value);if(v.length<2)return;
+  const hit=D.sku.find(s=>norm(s.nombre)===v)||D.sku.find(s=>norm(s.nombre).includes(v));if(hit)pick(hit.cod);}
+function pick(cod){selected=D.sku.find(s=>s.cod===cod);
+  document.getElementById('q').value=selected.nombre;document.getElementById('suggest').style.display='none';
+  document.getElementById('welcome').innerHTML='';renderHead();renderResults();
+  document.getElementById('medhead').scrollIntoView({behavior:'smooth',block:'start'});}
+
+function renderHead(){const s=selected;
+  let tags='<span class="tag '+(s.lom==='LOM'?'t-lom':'t-nolom')+'">'+s.lom+'</span>';
+  if(s.vital==='VITAL')tags+='<span class="tag t-vital"><i class="ti ti-alert-triangle"></i> Vital</span>';
+  if(s.sistema)tags+='<span class="tag t-cat">'+s.sistema+'</span>';
+  let sello='';
+  if(s.abc||s.xyz){sello='<div class="sello"><span style="color:#888">Clasificación logística:</span>'+
+    (s.abc?'<span class="chip">Rotación <b>'+s.abc+'</b></span>':'')+
+    (s.xyz?'<span class="chip">Demanda <b>'+s.xyz+'</b></span>':'')+
+    (s.vital==='VITAL'?'<span class="chip" style="border-color:#f0c0b8;background:#fbe9e7;color:#b03a2e"><i class="ti ti-star"></i> Medicamento vital</span>':'')+'</div>';}
+  document.getElementById('medhead').innerHTML='<div class="medhead"><div class="toprow"><div class="name">'+s.nombre+'</div><div class="tags">'+tags+'</div></div>'+sello+'</div>';
 }
 
-function nivelClass(n){if(n==='ALTA'||n==='ADECUADA')return'nivel-ALTA';if(n==='SEGUIMIENTO'||n==='REDUCIDA')return'nivel-SEGUIMIENTO';if(n==='SIN EXISTENCIA')return'nivel-SINEXISTENCIA';return'nivel-ALTA';}
-function estado(f){
-  if(f.nivel==='SIN EXISTENCIA'||f.saldo<=0)return['st-bad','ti-circle-x','Sin existencia'];
-  if(f.nivel==='REDUCIDA'||f.nivel==='SEGUIMIENTO')return['st-warn','ti-alert-triangle','Cobertura baja'];
-  return['st-ok','ti-circle-check','Disponible'];
-}
-
-function renderResults(){
-  const cod=selected.cod;
-  let filas=(D.det[cod]||[]).slice();
+function filasActivas(){let filas=(D.det[selected.cod]||[]).slice();
   const fp=document.getElementById('fProv').value,ft=document.getElementById('fTipo').value;
-  if(fp)filas=filas.filter(f=>f.prov===fp);
-  if(ft)filas=filas.filter(f=>f.tipo===ft);
-  // distancia
-  if(userPos){filas.forEach(f=>f.dist=haversine(userPos[0],userPos[1],f.lat,f.lng));filas.sort((a,b)=>a.dist-b.dist);}
-  else filas.sort((a,b)=>b.saldo-a.saldo);
+  if(fp)filas=filas.filter(x=>x.prov===fp);if(ft)filas=filas.filter(x=>x.tipo===ft);
+  if(userPos){filas.forEach(x=>x.dist=haversine(userPos[0],userPos[1],x.lat,x.lng));filas.sort((a,b)=>a.dist-b.dist);}
+  else filas.sort((a,b)=>b.saldo-a.saldo);return filas;}
 
-  const conEx=filas.filter(f=>f.saldo>0).length;
+function renderResults(){const filas=filasActivas();
+  const conEx=filas.filter(x=>x.saldo>0).length;
   document.getElementById('scope').innerHTML=userPos
-    ?`Unidades cercanas a <b style="color:#1e5a9e">tu ubicación</b> · ${conEx} con existencia`
-    :`${filas.length} unidades · ${conEx} con existencia · <i>activa tu ubicación para ordenar por cercanía</i>`;
-
+    ?'Unidades cercanas a <b style="color:#1e5a9e">tu ubicación</b> · '+conEx+' con existencia'
+    :filas.length+' unidades · '+conEx+' con existencia · <i>activa tu ubicación para ordenar por cercanía</i>';
   renderMap(filas);
-
   const box=document.getElementById('results');
   if(!filas.length){box.innerHTML='<div class="empty">No hay unidades para los filtros seleccionados.</div>';return;}
-  box.innerHTML=filas.map(f=>{
-    const[cls,icon,txt]=estado(f);
-    const dist=f.dist!=null?` · ${f.dist.toFixed(1)} km`:'';
-    const tel=f.tel?` · <i class="ti ti-phone"></i> ${f.tel.split(';')[0]}`:'';
-    const cob=f.saldo>0&&f.dias<9999?`cobertura ${Math.round(f.dias)} días`:(f.saldo>0?'con stock':'—');
-    return `<div class="rcard ${nivelClass(f.nivel)}">
-      <div class="info"><div class="nm">${f.nombre}</div>
-      <div class="meta"><i class="ti ti-map-pin"></i> ${f.loc||f.prov}${dist}${tel}</div></div>
-      <div class="stat"><div class="st ${cls}"><i class="ti ${icon}"></i> ${txt}</div><div class="cv">${cob}</div></div>
-    </div>`;
-  }).join('');
+  box.innerHTML=filas.map((x,i)=>{const e=estadoUE(x.saldo,x.dias,x.nivel);
+    const dist=x.dist!=null?' · '+x.dist.toFixed(1)+' km':'';
+    const tel=x.tel?' · <i class="ti ti-phone"></i> '+x.tel.split(';')[0]:'';
+    const exist=x.saldo>0?' · '+f(x.saldo)+' u.':'';
+    return '<div class="rcard n-'+e.clr+'" tabindex="0" onclick="abrirModal('+i+')" onkeypress="if(event.key===\'Enter\')abrirModal('+i+')">'+
+      '<div class="info"><div class="nm">'+x.nombre+'</div><div class="meta"><i class="ti ti-map-pin"></i> '+(x.loc||x.prov)+dist+tel+exist+'</div></div>'+
+      '<div class="stat"><div class="st s-'+e.clr+'">'+e.et+'</div><div class="cv">'+e.cv+'</div></div></div>';}).join('');
+  window._filas=filas;
 }
 
 function renderMap(filas){
   document.getElementById('map').style.display='block';
+  document.getElementById('mapStats').style.display='flex';
   document.getElementById('legend').style.display='flex';
-  if(!map){map=L.map('map',{scrollWheelZoom:false});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);}
-  markers.forEach(mk=>map.removeLayer(mk));markers=[];
+  if(!map){map=L.map('map',{scrollWheelZoom:false});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);markerLayer=L.layerGroup().addTo(map);}
+  markerLayer.clearLayers();
+  if(heatMal){map.removeLayer(heatMal);heatMal=null;}if(heatBien){map.removeLayer(heatBien);heatBien=null;}
+  const conStock=filas.filter(x=>x.saldo>0);const valOf=d=>(d>=9999?OPT*1.2:d);
+  const hMal=conStock.filter(x=>valOf(x.dias)<OPT).map(x=>{const falta=1-Math.min(valOf(x.dias),OPT)/OPT;return [x.lat,x.lng,Math.max(0.15,falta)];});
+  const hBien=conStock.filter(x=>valOf(x.dias)>=OPT*0.6).map(x=>{const bien=Math.min(1,(valOf(x.dias)-OPT*0.6)/(OPT*0.4));return [x.lat,x.lng,Math.max(0.15,bien)];});
+  if(hBien.length)heatBien=L.heatLayer(hBien,{radius:38,blur:28,minOpacity:.25,max:1.0,gradient:{0.0:'rgba(39,174,96,0)',0.5:'#7dcea0',1.0:'#1e8449'}}).addTo(map);
+  if(hMal.length)heatMal=L.heatLayer(hMal,{radius:38,blur:28,minOpacity:.30,max:1.0,gradient:{0.0:'rgba(192,57,43,0)',0.4:'#f4d03f',0.7:'#e67e22',1.0:'#c0392b'}}).addTo(map);
   const pts=[];
-  filas.forEach(f=>{
-    if(!f.lat)return;
-    const col=f.saldo<=0?'#c0392b':(f.nivel==='REDUCIDA'||f.nivel==='SEGUIMIENTO'?'#d89a1a':'#1d9e75');
-    const ic=L.divIcon({className:'',html:`<div style="width:16px;height:16px;border-radius:50%;background:${col};border:3px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.4)"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
-    const cob=f.saldo>0&&f.dias<9999?`<br>cobertura ${Math.round(f.dias)} días`:'';
-    const mk=L.marker([f.lat,f.lng],{icon:ic}).addTo(map).bindPopup(`<b>${f.nombre}</b><br>${f.loc||f.prov}${cob}${f.tel?'<br><i>'+f.tel.split(';')[0]+'</i>':''}`);
-    markers.push(mk);pts.push([f.lat,f.lng]);
-  });
-  if(userPos){
-    const um=L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(map).bindPopup('Tu ubicación');
-    markers.push(um);pts.push(userPos);
-  }
-  if(pts.length)map.fitBounds(pts,{padding:[30,30],maxZoom:12});
-  setTimeout(()=>map.invalidateSize(),200);
+  filas.forEach((x,i)=>{if(!x.lat)return;const e=estadoUE(x.saldo,x.dias,x.nivel);
+    const mk=L.circleMarker([x.lat,x.lng],{radius:8,fillColor:e.col,color:'#fff',weight:1.5,fillOpacity:.95});
+    mk.on('click',()=>abrirModal(i));markerLayer.addLayer(mk);pts.push([x.lat,x.lng]);});
+  if(userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(markerLayer);pts.push(userPos);}
+  if(pts.length){try{map.fitBounds(pts,{padding:[35,35],maxZoom:userPos?12:9});}catch(e){}}
+  setTimeout(()=>map.invalidateSize(),200);drawMapStats(filas);
+}
+function drawMapStats(filas){
+  const conStock=filas.filter(x=>x.saldo>0);
+  const reales=conStock.filter(x=>x.dias>0&&x.dias<9999).map(x=>x.dias).sort((a,b)=>a-b);
+  const med=reales.length?Math.round(reales[Math.floor(reales.length/2)]):null;
+  const opt=conStock.filter(x=>x.dias>=OPT).length;
+  const bajo=conStock.filter(x=>x.dias>=30&&x.dias<OPT).length;
+  const crit=conStock.filter(x=>x.dias>0&&x.dias<30).length;
+  const desab=filas.filter(x=>x.saldo<=0).length;
+  document.getElementById('mapStats').innerHTML=
+    '<div class="st"><div class="v" style="color:#1d9e75">'+(med==null?'—':med)+'</div><div class="l">días mediana<br>donde hay stock</div></div>'+
+    '<div class="st"><div class="v" style="color:#1d9e75">'+opt+'</div><div class="l">óptimas<br>≥90 días</div></div>'+
+    '<div class="st"><div class="v" style="color:#d89a1a">'+(bajo+crit)+'</div><div class="l">cobertura baja<br>&lt;90 días</div></div>'+
+    '<div class="st"><div class="v" style="color:#c0392b">'+desab+'</div><div class="l">sin existencia<br>saldo cero</div></div>';
 }
 
-function useGeo(){
-  if(!navigator.geolocation){alert('Tu dispositivo no permite ubicación.');return;}
-  navigator.geolocation.getCurrentPosition(p=>{
-    userPos=[p.coords.latitude,p.coords.longitude];
-    if(selected)renderResults();
-    else alert('Ubicación activada. Busca un medicamento para ver las unidades más cercanas.');
-  },()=>alert('No se pudo obtener tu ubicación.'));
+function abrirModal(i){const x=(window._filas||[])[i];if(!x)return;
+  const e=estadoUE(x.saldo,x.dias,x.nivel);
+  const bg={ok:'#e1f5ee',warn:'#fbf3e0',bad:'#fbeaea'}[e.clr];
+  const foto=x.foto?(x.foto.indexOf('http')===0?x.foto:'icons/'+x.foto):'';
+  const tel1=x.tel?x.tel.split(';')[0].trim():'';
+  const m=document.getElementById('modal');
+  m.innerHTML='<div class="mhead">'+(foto?'<img src="'+foto+'" onerror="this.remove()"/>':'')+
+    '<button class="mclose" onclick="cerrarModal()" aria-label="Cerrar">×</button></div>'+
+    '<div class="mbody"><div class="mname">'+x.nombre+'</div>'+
+    '<div class="mloc"><i class="ti ti-map-pin"></i> '+(x.loc||'')+' · '+(x.prov||'')+' · '+(x.tipo||'')+'</div>'+
+    '<div class="mstat s-'+e.clr+'" style="background:'+bg+';color:'+e.col+'">'+e.et+' · '+e.cv+'</div>'+
+    '<div class="mrow"><i class="ti ti-package"></i> Existencia: <b style="margin-left:4px">'+f(x.saldo)+'</b> unidades</div>'+
+    (x.dist!=null?'<div class="mrow"><i class="ti ti-route"></i> A '+x.dist.toFixed(1)+' km de tu ubicación</div>':'')+
+    (tel1?'<div class="mrow"><i class="ti ti-phone"></i> '+x.tel.replace(/;/g,' · ')+'</div>':'')+
+    '<div class="mact">'+
+    (tel1?'<a class="call" href="tel:'+tel1.replace(/[^0-9]/g,'')+'"><i class="ti ti-phone"></i> Llamar</a>':'')+
+    '<a class="route" href="https://www.google.com/maps/dir/?api=1&destination='+x.lat+','+x.lng+'" target="_blank"><i class="ti ti-map-2"></i> Cómo llegar</a>'+
+    '</div></div>';
+  document.getElementById('modalBg').classList.add('show');
+  if(map&&x.lat)map.flyTo([x.lat,x.lng],13,{duration:.6});
 }
+function cerrarModal(){document.getElementById('modalBg').classList.remove('show');}
+
+function pedirGeoSilencioso(){if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(p=>{userPos=[p.coords.latitude,p.coords.longitude];
+    const b=document.getElementById('btnGeo');b.classList.add('active');b.innerHTML='<i class="ti ti-map-pin"></i> Ubicación activa';
+    if(selected)renderResults();},()=>{},{enableHighAccuracy:false,timeout:6000,maximumAge:600000});}
+function useGeo(){if(!navigator.geolocation){alert('Tu dispositivo no permite ubicación.');return;}
+  navigator.geolocation.getCurrentPosition(p=>{userPos=[p.coords.latitude,p.coords.longitude];
+    const b=document.getElementById('btnGeo');b.classList.add('active');b.innerHTML='<i class="ti ti-map-pin"></i> Ubicación activa';
+    if(selected)renderResults();else alert('Ubicación activada. Busca un medicamento para ordenar por cercanía.');},
+    ()=>alert('No se pudo obtener tu ubicación. Revisa los permisos del navegador.'));}
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;
+  const b=document.getElementById('btnInstall');b.style.display='block';
+  b.onclick=async()=>{b.style.display='none';deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;};});
 </script>
 </body>
 </html>
