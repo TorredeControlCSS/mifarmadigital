@@ -202,6 +202,7 @@
     <span><span class="dot" style="background:#d89a1a"></span>Quedan pocas</span>
     <span><span class="dot" style="background:#c0392b"></span>Sin existencia</span>
     <span><span class="dot" style="background:#1e5a9e"></span>Tu ubicación</span>
+    <span style="color:#888">Letras: C=CAPPS · H=Hospital · P=Policlínica · U=ULAPS</span>
     <span style="color:#888;font-style:italic">· toca un punto para ver la unidad</span>
   </div>
   <div class="scope" id="scope"></div>
@@ -378,7 +379,7 @@ function renderNearby(){
       '<div class="nc-loc">'+st.disp+' de '+D.meta.lom_total+' medicamentos LOM disponibles'+(st.med!=null?' · ~'+st.med+' días de abastecimiento':'')+'</div>'+
       '<div class="nc-loc" style="margin-top:6px;color:#888">Referencia nacional: '+nac+'% disponible. El color del mapa indica el nivel de abastecimiento de la provincia.</div>'+
       '<div id="miniMap" style="height:220px;border-radius:8px;border:1px solid #cfd8e0;margin-top:12px"></div>'+
-      mejoresRenglones()+'</div></div>';
+      mejoresUnidades(provFiltroInicio)+'</div></div>';
     dibujarMiniMapa(null);
     return;
   }
@@ -388,12 +389,10 @@ function renderNearby(){
   const cmp = u.pct>=nac ? 'por encima del promedio nacional' : 'por debajo del promedio nacional';
   box.innerHTML=
     '<div class="nearcard"><div class="nc-top"><i class="ti ti-map-pin"></i> Tu unidad más cercana · a '+near.dist.toFixed(1)+' km</div>'+
-    '<div class="nc-body"><div class="nc-name">'+u.nombre+'</div>'+
-    '<div class="nc-loc">'+(u.loc||'')+' · '+u.prov+' · '+u.tipo+'</div>'+
+    '<div class="nc-body"><div class="nc-name">'+u.nombre+' <span style="font-weight:400;font-size:12px;color:#888">· '+(u.loc||u.prov)+' · '+u.tipo+'</span></div>'+
     '<div class="nc-bars">'+
       barra('Esta unidad',u.pct)+
       barra('Tu provincia',prov)+
-      barra('Nacional',nac)+
     '</div>'+
     '<div class="nc-act">Tiene <b>'+u.lom_con+'</b> de <b>'+u.lom_tot+'</b> medicamentos de la Lista Oficial — '+cmp+'.</div>'+
     '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'+
@@ -404,6 +403,19 @@ function renderNearby(){
     mejoresRenglones()+
     '</div></div>';
   dibujarMiniMapa(near);
+}
+function mejoresUnidades(prov){
+  // UE de la provincia con mejor abastecimiento (respeta filtro de tipo si está activo)
+  const fTipo=(document.getElementById('fTipo')||{}).value||'';
+  let ues=Object.keys(D.inst).map(id=>D.inst[id]).filter(u=>u.prov===prov&&u.lom_tot);
+  if(fTipo)ues=ues.filter(u=>u.tipo===fTipo);
+  ues=ues.sort((a,b)=>b.pct-a.pct).slice(0,5);
+  if(!ues.length)return '';
+  return '<div style="margin-top:14px"><div style="font-size:12px;font-weight:600;color:#0f6e56;margin-bottom:6px"><i class="ti ti-building-hospital"></i> Unidades con mejor abastecimiento'+(fTipo?' ('+fTipo+')':'')+'</div>'+
+    ues.map(u=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f3faf7;border:1px solid #d4ede2;border-radius:6px;margin-bottom:5px;font-size:12.5px">'+
+      '<span style="color:#0C447C">'+u.nombre+' <span style="color:#888;font-weight:400">· '+u.tipo+'</span></span>'+
+      '<span style="font-family:Consolas,monospace;color:'+(u.pct>=90?'#1d9e75':(u.pct>=60?'#d89a1a':'#c0392b'))+';font-weight:700;white-space:nowrap">'+u.pct+'%</span></div>').join('')+
+    '</div>';
 }
 function mejoresRenglones(){
   // renglones LOM con mejor cobertura, respetando filtros activos (provincia/sistema/criticidad)
@@ -576,10 +588,16 @@ function filasActivas(){let filas=(D.det[selected.cod]||[]).slice();
   const ft=document.getElementById('fTipo').value;
   // Alcance geográfico = la VISTA del mapa (filtro adaptativo)
   if(vistaMapa==='sector'&&userPos){
-    filas=filas.filter(x=>x.lat&&haversine(userPos[0],userPos[1],x.lat,x.lng)<=RADIO_SECTOR);
+    const ensector=filas.filter(x=>x.lat&&haversine(userPos[0],userPos[1],x.lat,x.lng)<=RADIO_SECTOR);
+    // si no hay unidades en el sector (zona sin UE cercana), ampliar a provincia automáticamente
+    if(ensector.length){ filas=ensector; }
+    else {
+      const near=ueMasCercana();const pr=near?near.u.prov:null;
+      if(pr){const enprov=filas.filter(x=>x.prov===pr);filas=enprov.length?enprov:filas;}
+    }
   } else if(vistaMapa==='prov'&&userPos){
     const near=ueMasCercana();const pr=near?near.u.prov:null;
-    if(pr)filas=filas.filter(x=>x.prov===pr);
+    if(pr){const enprov=filas.filter(x=>x.prov===pr);if(enprov.length)filas=enprov;}
   } else {
     // vista país: respeta el filtro manual de provincia si el usuario lo usó
     const fp=provFiltroInicio||document.getElementById('fProv').value;
@@ -622,8 +640,12 @@ function renderMap(filas){
   if(hBien.length)heatBien=L.heatLayer(hBien,{radius:38,blur:28,minOpacity:.25,max:1.0,gradient:{0.0:'rgba(39,174,96,0)',0.5:'#7dcea0',1.0:'#1e8449'}}).addTo(map);
   if(hMal.length)heatMal=L.heatLayer(hMal,{radius:38,blur:28,minOpacity:.30,max:1.0,gradient:{0.0:'rgba(192,57,43,0)',0.4:'#f4d03f',0.7:'#e67e22',1.0:'#c0392b'}}).addTo(map);
   const pts=[];let primerMk=null;
+  const ftActivo=(document.getElementById('fTipo')||{}).value||'';
+  const letraTipo=t=>({'CAPPS':'C','Hospital':'H','Policlínica':'P','ULAPS':'U'}[t]||(t?t[0].toUpperCase():'•'));
   filas.forEach((x,i)=>{if(!x.lat)return;const e=estadoUE(x.saldo,x.dias,x.nivel);
-    const mk=L.circleMarker([x.lat,x.lng],{radius:8,fillColor:e.col,color:'#fff',weight:1.5,fillOpacity:.95});
+    const atenuado = ftActivo && x.tipo!==ftActivo;
+    const op = atenuado?0.25:1;
+    const mk=L.marker([x.lat,x.lng],{icon:L.divIcon({className:'',html:'<div style="width:20px;height:20px;border-radius:50%;background:'+e.col+';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;font-family:Arial;opacity:'+op+'">'+letraTipo(x.tipo)+'</div>',iconSize:[20,20],iconAnchor:[10,10]})});
     const cob=x.saldo>0?('<br><span style="color:'+e.col+';font-weight:600">'+e.et+'</span> · '+e.cv):'<br><span style="color:#c0392b;font-weight:600">Sin existencia</span>';
     const tel=x.tel?'<br><i class="ti ti-phone"></i> '+x.tel.split(';')[0]:'';
     const dist=x.dist!=null?' · '+x.dist.toFixed(1)+' km':'';
@@ -747,8 +769,7 @@ function drawMapStats(filas){
   const crit=conStock.filter(x=>x.dias>0&&x.dias<30).length;
   const desab=filas.filter(x=>x.saldo<=0).length;
   document.getElementById('mapStats').innerHTML=
-    '<div class="st"><div class="v" style="color:#1d9e75">'+(med==null?'—':med)+'</div><div class="l">días mediana<br>donde hay stock</div></div>'+
-    '<div class="st"><div class="v" style="color:#1d9e75">'+opt+'</div><div class="l">óptimas<br>≥90 días</div></div>'+
+    '<div class="st"><div class="v" style="color:#1d9e75">'+opt+'</div><div class="l">unidades óptimas<br>≥90 días</div></div>'+
     '<div class="st"><div class="v" style="color:#d89a1a">'+(bajo+crit)+'</div><div class="l">cobertura baja<br>&lt;90 días</div></div>'+
     '<div class="st"><div class="v" style="color:#c0392b">'+desab+'</div><div class="l">sin existencia<br>saldo cero</div></div>';
 }
@@ -1017,7 +1038,7 @@ function explicarPerfil(){infoModal(
   '</table>'+
   '<div style="font-size:13px;font-weight:600;color:#0C447C;margin:12px 0 4px">Constancia de la demanda</div>'+
   '<table class="deftbl">'+
-  '<tr><td>Demanda estable</td><td>Su consumo es parejo y predecible mes a mes; fácil de planificar.</td></tr>'+
+  '<tr><td>Demanda estable</td><td>Su consumo es parejo y predecible mes a mes.</td></tr>'+
   '<tr><td>Demanda variable</td><td>El consumo sube y baja de un mes a otro, con fluctuaciones moderadas.</td></tr>'+
   '<tr><td>Demanda esporádica</td><td>Aparece de forma irregular e impredecible; puede haber meses sin movimiento.</td></tr>'+
   '</table>'+
