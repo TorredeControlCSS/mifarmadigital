@@ -646,7 +646,8 @@ function modalUE(x,dist){
         (s.ven?'<div class="mrow"><i class="ti ti-alert-circle"></i> Categoría VEN: '+s.ven+'</div>':'')+
         (s.abc?'<div class="mrow"><i class="ti ti-trending-up"></i> Frecuencia de uso: '+(ABC_USR[s.abc]||s.abc)+'</div>':'')+
         (s.xyz?'<div class="mrow"><i class="ti ti-wave-sine"></i> Estabilidad de demanda: '+(XYZ_USR[s.xyz]||s.xyz)+'</div>':'')+
-        (s.cat?'<div class="mrow"><i class="ti ti-category"></i> Categoría de uso: '+s.cat+'</div>':'')+
+        (s.cat?'<div class="mrow"><i class="ti ti-category"></i> Grupo terapéutico: '+s.cat+'</div>':'')+
+        (s.esp?'<div class="mrow"><i class="ti ti-book"></i> Especialidad / subgrupo: '+s.esp+'</div>':'')+
         (x.dias>0&&x.dias<9999?'<div class="mrow"><i class="ti ti-calendar"></i> Días de cobertura en esta unidad: ~'+Math.round(x.dias)+'</div>':'')+
         '</div>';
       perfil='<div class="mrow" style="border-top:1px solid #eee;color:#0C447C;font-weight:600">'+s.nombre+'</div>'+
