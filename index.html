@@ -498,7 +498,6 @@ function pick(cod){selected=D.sku.find(s=>s.cod===cod);
   document.getElementById('q').value=selected.nombre;document.getElementById('suggest').style.display='none';
   document.getElementById('welcome').innerHTML='';document.getElementById('nearby').innerHTML='';
   document.getElementById('hero').style.display='none';
-  document.getElementById('listadoBtn').style.display='none';
   document.getElementById('btnBack').classList.add('show');
   vistaMapa = userPos ? 'sector' : 'pais'; // arranca en mi sector si hay ubicación
   renderMetrics(selected);renderHead();sincronizarFiltros();renderResults();
@@ -523,7 +522,6 @@ function volver(){
   document.getElementById('mapViews').style.display='none';
   document.getElementById('scope').innerHTML='';
   document.getElementById('hero').style.display='block';
-  document.getElementById('listadoBtn').style.display='block';
   document.getElementById('btnBack').classList.remove('show');
   renderMetrics(null);renderNearby();renderWelcome();
   window.scrollTo({top:0,behavior:'smooth'});
