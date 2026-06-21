@@ -1,6 +1,6 @@
 // Service Worker — Mi Farma Digital · CSS Panamá
 // Cache-first para offline, pero data.json en NETWORK-FIRST (datos siempre frescos).
-const CACHE = 'mifarma-v14';
+const CACHE = 'mifarma-v15';
 const ASSETS = [
   './',
   './index.html',
@@ -8,9 +8,11 @@ const ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './favicon.ico',
+  './polygons_provincias.js',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js'
 ];
 
 self.addEventListener('install', e => {
