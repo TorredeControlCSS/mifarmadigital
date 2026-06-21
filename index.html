@@ -156,7 +156,8 @@
 
   <div class="searchbar">
     <div class="searchbox"><i class="ti ti-search" style="color:#1e5a9e;font-size:20px"></i>
-      <input id="q" placeholder="Escriba el medicamento…" autocomplete="off"/></div>
+      <input id="q" placeholder="Escriba el medicamento…" autocomplete="off"/>
+      <button id="btnClear" onclick="limpiar()" style="display:none;background:none;border:none;color:#888;font-size:20px;cursor:pointer;padding:0 4px">×</button></div>
     <button class="btn" onclick="doSearch()">Buscar</button>
     <div id="suggest" class="suggest" style="display:none"></div>
   </div>
@@ -187,6 +188,14 @@
   </div>
   <div class="scope" id="scope"></div>
   <div class="results" id="results"></div>
+
+  <div id="listadoBtn" style="text-align:center;margin-top:20px">
+    <button class="btn-ghost" onclick="abrirListado()" style="padding:10px 18px"><i class="ti ti-table"></i> Ver listado nacional consolidado (LOM)</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="tablaBg" onclick="if(event.target===this)cerrarTabla()">
+  <div id="tablaModal" style="background:#fff;border-radius:12px;width:96%;max-width:1000px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column"></div>
 </div>
 
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)cerrarModal()"><div class="modal" id="modal"></div></div>
@@ -230,10 +239,12 @@ function boot(){
   renderMetrics(null);
   const fp=document.getElementById('fProv');D.provincias.forEach(p=>fp.innerHTML+='<option>'+p+'</option>');
   const ft=document.getElementById('fTipo');D.tipos.forEach(t=>ft.innerHTML+='<option>'+t+'</option>');
-  fp.onchange=ft.onchange=()=>{if(selected)renderResults();};
+  fp.onchange=()=>{if(selected){vistaMapa='pais';marcaVista();renderResults();}};
+  ft.onchange=()=>{if(selected)renderResults();};
   const q=document.getElementById('q'),sg=document.getElementById('suggest');
   q.addEventListener('input',()=>{
-    if(selected){selected=null;} // limpiar selección al reescribir (punto: limpiar auto)
+    document.getElementById('btnClear').style.display=q.value?'block':'none';
+    if(selected){selected=null;} // limpiar selección al reescribir
     const v=norm(q.value);if(v.length<2){sg.style.display='none';sgIdx=-1;return;}
     const hits=D.sku.filter(s=>norm(s.nombre).includes(v)).slice(0,12);
     if(!hits.length){sg.style.display='none';sgIdx=-1;return;}
@@ -268,22 +279,26 @@ function renderMetrics(sku){
   }
   // inteligente: % de ESTE renglón disponible nacional / provincial / mi sector
   const filas=(D.det[sku.cod]||[]);
-  const pctOf=arr=>{const t=arr.length;if(!t)return null;const c=arr.filter(x=>x.saldo>0).length;return Math.round(c/t*100);};
-  const nac=pctOf(filas);
-  let prov=null,sect=null,provName='',sectN=0;
+  const statOf=arr=>{const t=arr.length;if(!t)return {pct:null,med:null};
+    const c=arr.filter(x=>x.saldo>0).length;
+    const dd=arr.filter(x=>x.saldo>0&&x.dias>0&&x.dias<9999).map(x=>x.dias).sort((a,b)=>a-b);
+    const med=dd.length?Math.round(dd[Math.floor(dd.length/2)]):null;
+    return {pct:Math.round(c/t*100),med:med};};
+  const nac=statOf(filas);
+  let prov={pct:null,med:null},sect={pct:null,med:null},provName='',sectN=0;
   if(userPos){
-    // provincia del usuario = la de su UE más cercana
     const near=ueMasCercana(); provName=near?near.u.prov:'';
-    if(provName)prov=pctOf(filas.filter(x=>x.prov===provName));
+    if(provName)prov=statOf(filas.filter(x=>x.prov===provName));
     const ensector=filas.filter(x=>x.lat&&haversine(userPos[0],userPos[1],x.lat,x.lng)<=RADIO_SECTOR);
-    sectN=ensector.length; sect=pctOf(ensector);
+    sectN=ensector.length; sect=statOf(ensector);
   }
-  function card(lbl,p,extra){const c=p==null?'#888':pctColor2(p);
-    return '<div class="mcard m-white" style="border-color:'+c+'33"><div class="big num" style="color:'+c+'">'+(p==null?'—':p+'%')+'</div><div class="lbl">'+lbl+(extra?'<br>'+extra:'')+'</div></div>';}
+  function card(lbl,st,extra){const c=st.pct==null?'#888':pctColor2(st.pct);
+    const dias=st.med!=null?'<span style="font-size:11px;color:#888"> · ~'+st.med+' días</span>':'';
+    return '<div class="mcard m-white" style="border-color:'+c+'33"><div class="big num" style="color:'+c+'">'+(st.pct==null?'—':st.pct+'%')+dias+'</div><div class="lbl">'+lbl+(extra?'<br>'+extra:'')+'</div></div>';}
   box.innerHTML=
-    card('disponible nacional','','').replace('—',nac==null?'—':nac+'%').replace('color:#888',nac==null?'color:#888':'color:'+pctColor2(nac))+
-    (userPos?card('en tu provincia',prov,provName):card('en tu provincia',null,'activa ubicación'))+
-    (userPos?card('en tu sector',sect,sectN+' unidades a ≤'+RADIO_SECTOR+'km'):card('en tu sector',null,'activa ubicación'));
+    card('disponible nacional',nac,'')+
+    (userPos?card('en tu provincia',prov,provName):card('en tu provincia',{pct:null,med:null},'activa ubicación'))+
+    (userPos?card('en tu sector',sect,sectN+' unidades a ≤'+RADIO_SECTOR+'km'):card('en tu sector',{pct:null,med:null},'activa ubicación'));
 }
 function pctColor2(p){return p>=90?'#1d9e75':(p>=60?'#d89a1a':'#c0392b');}
 
@@ -312,7 +327,26 @@ function renderNearby(){
     '</div>'+
     '<div class="nc-act">Tiene <b>'+u.lom_con+'</b> de <b>'+u.lom_tot+'</b> medicamentos de la Lista Oficial — '+cmp+'.'+
     ' &nbsp;<a class="nc-link" href="javascript:abrirModalUE(\''+near.id+'\','+near.dist.toFixed(2)+')">Ver detalle y contacto →</a></div>'+
+    '<div id="miniMap" style="height:200px;border-radius:8px;margin-top:12px;border:1px solid #cfd8e0"></div>'+
     '</div></div>';
+  dibujarMiniMapa(near);
+}
+function dibujarMiniMapa(near){
+  if(typeof L==='undefined'||!userPos)return;
+  setTimeout(()=>{
+    const el=document.getElementById('miniMap');if(!el||el._leaflet_id)return;
+    const mm=L.map('miniMap',{scrollWheelZoom:false,zoomControl:false,attributionControl:false}).setView(userPos,12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(mm);
+    // UEs del sector con su abastecimiento general (color = su %)
+    Object.keys(D.inst).forEach(id=>{const v=D.inst[id];if(!v.lat||!v.lom_tot)return;
+      if(haversine(userPos[0],userPos[1],v.lat,v.lng)>RADIO_SECTOR*1.5)return;
+      const c=v.pct>=90?'#1d9e75':(v.pct>=60?'#d89a1a':'#c0392b');
+      L.circleMarker([v.lat,v.lng],{radius:7,fillColor:c,color:'#fff',weight:1.5,fillOpacity:.95})
+        .addTo(mm).bindPopup('<b>'+v.nombre+'</b><br>Abastecimiento: '+v.pct+'%');
+    });
+    L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:14px;height:14px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 4px rgba(30,90,158,.3)"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(mm);
+    setTimeout(()=>mm.invalidateSize(),150);
+  },100);
 }
 function barra(lab,pct){const c=pctColor(pct);
   return '<div class="barrow"><span class="lab">'+lab+'</span><div class="track"><div class="fill" style="width:'+Math.min(100,pct)+'%;background:'+c+'"></div></div><span class="pct" style="color:'+c+'">'+pct+'%</span></div>';}
@@ -343,11 +377,20 @@ function pick(cod){selected=D.sku.find(s=>s.cod===cod);
   document.getElementById('q').value=selected.nombre;document.getElementById('suggest').style.display='none';
   document.getElementById('welcome').innerHTML='';document.getElementById('nearby').innerHTML='';
   document.getElementById('hero').style.display='none';
+  document.getElementById('listadoBtn').style.display='none';
   document.getElementById('btnBack').classList.add('show');
-  renderMetrics(selected);renderHead();renderResults();
+  vistaMapa = userPos ? 'sector' : 'pais'; // arranca en mi sector si hay ubicación
+  renderMetrics(selected);renderHead();sincronizarFiltros();renderResults();
   document.getElementById('btnBack').scrollIntoView({behavior:'smooth',block:'start'});}
 
 /* ===== Volver (punto 5) ===== */
+function limpiar(){
+  document.getElementById('q').value='';
+  document.getElementById('btnClear').style.display='none';
+  document.getElementById('suggest').style.display='none';
+  if(selected)volver();
+  document.getElementById('q').focus();
+}
 function volver(){
   selected=null;
   document.getElementById('q').value='';
@@ -359,6 +402,7 @@ function volver(){
   document.getElementById('mapViews').style.display='none';
   document.getElementById('scope').innerHTML='';
   document.getElementById('hero').style.display='block';
+  document.getElementById('listadoBtn').style.display='block';
   document.getElementById('btnBack').classList.remove('show');
   renderMetrics(null);renderNearby();renderWelcome();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -377,8 +421,19 @@ function renderHead(){const s=selected;
 }
 
 function filasActivas(){let filas=(D.det[selected.cod]||[]).slice();
-  const fp=document.getElementById('fProv').value,ft=document.getElementById('fTipo').value;
-  if(fp)filas=filas.filter(x=>x.prov===fp);if(ft)filas=filas.filter(x=>x.tipo===ft);
+  const ft=document.getElementById('fTipo').value;
+  // Alcance geográfico = la VISTA del mapa (filtro adaptativo)
+  if(vistaMapa==='sector'&&userPos){
+    filas=filas.filter(x=>x.lat&&haversine(userPos[0],userPos[1],x.lat,x.lng)<=RADIO_SECTOR);
+  } else if(vistaMapa==='prov'&&userPos){
+    const near=ueMasCercana();const pr=near?near.u.prov:null;
+    if(pr)filas=filas.filter(x=>x.prov===pr);
+  } else {
+    // vista país: respeta el filtro manual de provincia si el usuario lo usó
+    const fp=document.getElementById('fProv').value;
+    if(fp)filas=filas.filter(x=>x.prov===fp);
+  }
+  if(ft)filas=filas.filter(x=>x.tipo===ft);
   if(userPos){filas.forEach(x=>x.dist=haversine(userPos[0],userPos[1],x.lat,x.lng));filas.sort((a,b)=>a.dist-b.dist);}
   else filas.sort((a,b)=>b.saldo-a.saldo);return filas;}
 
@@ -440,7 +495,16 @@ function encuadrar(filas){
   const pts=(window._mapPts||[]).slice();if(userPos)pts.push(userPos);
   if(pts.length){try{map.fitBounds(pts,{padding:[35,35],maxZoom:userPos?12:9});}catch(e){}}
 }
-function setVista(v){vistaMapa=v;marcaVista();if(selected)encuadrar(filasActivas());}
+function setVista(v){vistaMapa=v;marcaVista();sincronizarFiltros();if(selected)renderResults();}
+function sincronizarFiltros(){
+  const fp=document.getElementById('fProv');
+  // En vista provincia o sector, el filtro de provincia es redundante -> ocultarlo
+  if((vistaMapa==='prov'||vistaMapa==='sector')&&userPos){
+    fp.style.display='none';
+  } else {
+    fp.style.display='';
+  }
+}
 function marcaVista(){const has=!!userPos;[].forEach.call(document.querySelectorAll('.mv-btn'),b=>{
   const v=b.getAttribute('data-v');
   b.classList.toggle('active',vistaMapa===v||(vistaMapa==='auto'&&v==='sector'&&has)||(vistaMapa==='auto'&&v==='pais'&&!has));
@@ -479,9 +543,22 @@ function modalUE(x,dist){
       if(s.abc&&ABC_USR[s.abc])chips.push(ABC_USR[s.abc]);
       if(s.xyz&&XYZ_USR[s.xyz])chips.push(XYZ_USR[s.xyz]);
       if(s.vital==='VITAL')chips.push('★ Vital');
+      // info técnica completa, desplegable con "Ver más"
+      const tecnica=
+        '<div id="verMas" style="display:none">'+
+        (s.sistema?'<div class="mrow"><i class="ti ti-stethoscope"></i> Sistema: '+s.sistema+'</div>':'')+
+        '<div class="mrow"><i class="ti ti-list"></i> Lista Oficial: '+(s.lom==='LOM'?'Sí (incluido en LOM)':'No incluido')+'</div>'+
+        (s.ven?'<div class="mrow"><i class="ti ti-alert-circle"></i> Categoría VEN: '+s.ven+'</div>':'')+
+        (s.abc?'<div class="mrow"><i class="ti ti-trending-up"></i> Frecuencia de uso: '+(ABC_USR[s.abc]||s.abc)+'</div>':'')+
+        (s.xyz?'<div class="mrow"><i class="ti ti-wave-sine"></i> Estabilidad de demanda: '+(XYZ_USR[s.xyz]||s.xyz)+'</div>':'')+
+        (s.cat?'<div class="mrow"><i class="ti ti-category"></i> Categoría de uso: '+s.cat+'</div>':'')+
+        (x.dias>0&&x.dias<9999?'<div class="mrow"><i class="ti ti-calendar"></i> Días de cobertura en esta unidad: ~'+Math.round(x.dias)+'</div>':'')+
+        '</div>';
       perfil='<div class="mrow" style="border-top:1px solid #eee;color:#0C447C;font-weight:600">'+s.nombre+'</div>'+
         (s.sistema?'<div class="mrow"><i class="ti ti-stethoscope"></i> '+s.sistema+'</div>':'')+
-        (chips.length?'<div class="mrow"><i class="ti ti-tag"></i> '+chips.join(' · ')+'</div>':'');
+        (chips.length?'<div class="mrow"><i class="ti ti-tag"></i> '+chips.join(' · ')+'</div>':'')+
+        tecnica+
+        '<div class="mrow" style="justify-content:center;border:none;padding-top:4px"><a id="verMasLink" href="javascript:toggleVerMas()" style="color:#1e5a9e;font-weight:600;text-decoration:none">Ver más información técnica ▾</a></div>';
     }
     bloque='<div class="mstat s-'+e.clr+'" style="background:'+bg+';color:'+e.col+'">'+e.et+' · '+e.cv+'</div>'+
       '<div class="mrow"><i class="ti ti-package"></i> Existencia: <b style="margin-left:4px">'+f(x.saldo)+'</b> unidades</div>'+
@@ -508,6 +585,50 @@ function modalUE(x,dist){
   if(map&&x.lat)map.flyTo([x.lat,x.lng],13,{duration:.6});
 }
 function cerrarModal(){document.getElementById('modalBg').classList.remove('show');}
+function toggleVerMas(){const v=document.getElementById('verMas'),l=document.getElementById('verMasLink');
+  if(!v)return;const open=v.style.display!=='none';v.style.display=open?'none':'block';
+  if(l)l.innerHTML=open?'Ver más información técnica ▾':'Ver menos ▴';}
+
+/* ===== Listado nacional consolidado (para prensa/instituciones) ===== */
+function abrirListado(){
+  const m=document.getElementById('tablaModal');
+  // armar tabla: cada renglón LOM con su disponibilidad nacional
+  const rows=D.sku.filter(s=>s.lom==='LOM').map(s=>{
+    const filas=D.det[s.cod]||[];
+    const con=filas.filter(x=>x.saldo>0).length, tot=filas.length;
+    const pct=tot?Math.round(con/tot*100):0;
+    const dd=filas.filter(x=>x.saldo>0&&x.dias>0&&x.dias<9999).map(x=>x.dias).sort((a,b)=>a-b);
+    const med=dd.length?Math.round(dd[Math.floor(dd.length/2)]):null;
+    const stock=filas.reduce((a,x)=>a+(x.saldo||0),0);
+    return {nombre:s.nombre,sistema:s.sistema||'',vital:s.vital==='VITAL',pct:pct,med:med,ue:con,stock:stock};
+  }).sort((a,b)=>a.pct-b.pct); // los más críticos primero
+  let html='<div style="padding:14px 18px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">'+
+    '<div><div style="font-size:17px;font-weight:600;color:#0C447C">Listado nacional consolidado</div>'+
+    '<div style="font-size:12px;color:#666">'+rows.length+' medicamentos de la Lista Oficial · ordenados por disponibilidad</div></div>'+
+    '<button onclick="cerrarTabla()" style="background:#0C447C;color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer">×</button></div>'+
+    '<div style="padding:8px 18px;border-bottom:1px solid #eee"><input id="tablaFiltro" placeholder="Filtrar medicamento…" oninput="filtrarTabla()" style="width:100%;padding:8px 12px;border:1px solid #a8a8a8;border-radius:6px;font-size:14px"/></div>'+
+    '<div style="overflow:auto;flex:1"><table id="tablaNac" style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead style="position:sticky;top:0;background:#f4f6f8"><tr>'+
+    '<th style="text-align:left;padding:8px 10px;border-bottom:2px solid #1e5a9e">Medicamento</th>'+
+    '<th style="padding:8px;border-bottom:2px solid #1e5a9e">Disponib.</th>'+
+    '<th style="padding:8px;border-bottom:2px solid #1e5a9e">Cobertura</th>'+
+    '<th style="padding:8px;border-bottom:2px solid #1e5a9e">UE con stock</th>'+
+    '<th style="padding:8px;border-bottom:2px solid #1e5a9e">Existencia</th></tr></thead><tbody>';
+  rows.forEach(r=>{const c=r.pct>=90?'#1d9e75':(r.pct>=60?'#d89a1a':'#c0392b');
+    html+='<tr class="trow" data-n="'+norm(r.nombre)+'">'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee">'+(r.vital?'<span style="color:#b03a2e">★ </span>':'')+r.nombre+(r.sistema?'<br><span style="font-size:11px;color:#888">'+r.sistema+'</span>':'')+'</td>'+
+      '<td style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace;font-weight:700;color:'+c+'">'+r.pct+'%</td>'+
+      '<td style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+(r.med!=null?'~'+r.med+' días':'—')+'</td>'+
+      '<td style="text-align:center;padding:7px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+r.ue+'</td>'+
+      '<td style="text-align:right;padding:7px 10px;border-bottom:1px solid #eee;font-family:Consolas,monospace">'+f(Math.round(r.stock))+'</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  m.innerHTML=html;
+  document.getElementById('tablaBg').classList.add('show');
+}
+function filtrarTabla(){const v=norm(document.getElementById('tablaFiltro').value);
+  [].forEach.call(document.querySelectorAll('.trow'),tr=>{tr.style.display=tr.getAttribute('data-n').includes(v)?'':'none';});}
+function cerrarTabla(){document.getElementById('tablaBg').classList.remove('show');}
 
 /* ===== Modales explicativos (punto 7, imprescindibles) ===== */
 function infoModal(html){const m=document.getElementById('modal');m.classList.add('info-modal');
