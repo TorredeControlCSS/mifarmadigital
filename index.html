@@ -23,9 +23,12 @@
   .brand img{height:38px;width:auto;display:block}
   .brand .sub{color:#9fc4ec;font-size:10px;letter-spacing:.4px}
   .brand .ttl{color:#fff;font-size:16px;font-weight:600;line-height:1.1}
+  .hdr-actions{display:flex;align-items:center;gap:8px}
+  #btnInstall{display:none;background:transparent;color:#cfe0f3;border:1px solid #4a78ad;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer}
   .hdr-right{color:#9fc4ec;font-size:11px}
-  #btnInstall{display:none;background:#fff;color:#0C447C;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer}
   .wrap{max-width:1100px;margin:0 auto;padding:14px 16px 40px}
+  #btnBack{display:none;background:none;border:none;color:#1e5a9e;font-size:14px;font-weight:600;cursor:pointer;padding:6px 0;margin-bottom:4px;align-items:center;gap:5px}
+  #btnBack.show{display:inline-flex}
   .hero{text-align:center;margin:6px 0 12px}
   .hero h1{font-size:19px;color:#0C447C;font-weight:600}
   .hero p{font-size:13px;color:#555;margin-top:2px}
@@ -37,25 +40,50 @@
   .filters select{padding:7px 10px;border:1px solid #a8a8a8;border-radius:6px;background:#fff;font-size:13px;color:#333}
   .btn-ghost{background:#fff;border:1px solid #1e5a9e;color:#1e5a9e;border-radius:6px;padding:7px 12px;font-weight:600;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px}
   .btn-ghost.active{background:#1e5a9e;color:#fff}
-  .metrics{display:flex;gap:8px;margin-bottom:16px}
-  .mcard{flex:1;border-radius:8px;padding:9px 12px;display:flex;flex-direction:column;justify-content:center;min-height:54px}
+  .metrics{display:flex;gap:8px;margin-bottom:14px}
+  .mcard{flex:1;border-radius:8px;padding:9px 12px;display:flex;flex-direction:column;justify-content:center;min-height:54px;position:relative}
   .mcard .big{font-size:21px;font-weight:700;line-height:1}
   .mcard .lbl{font-size:10.5px;margin-top:3px;line-height:1.2}
   .m-blue{background:#0C447C;color:#fff}.m-blue .lbl{color:#9fc4ec}
   .m-white{background:#fff;border:1px solid #a8a8a8}.m-white .big{color:#1d9e75}.m-white .lbl{color:#666}
   .m-amber{background:#fff;border:1px solid #d89a1a}.m-amber .big{color:#ba7517}.m-amber .lbl{color:#666}
+  .help{cursor:pointer;border:none;background:none;color:inherit;opacity:.7;font-size:12px;position:absolute;top:6px;right:8px}
+  /* Tarjeta UE cercana (inicio) */
+  .nearcard{background:#fff;border:1px solid #cfd8e0;border-radius:10px;overflow:hidden;margin-bottom:14px}
+  .nearcard .nc-top{background:#0C447C;color:#fff;padding:9px 14px;font-size:12px;display:flex;align-items:center;gap:6px}
+  .nearcard .nc-body{padding:14px}
+  .nearcard .nc-name{font-size:16px;font-weight:600;color:#0C447C}
+  .nearcard .nc-loc{font-size:12.5px;color:#666;margin-top:2px}
+  .nearcard .nc-bars{margin-top:12px}
+  .nearcard .barrow{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px}
+  .nearcard .barrow .lab{width:96px;color:#555;flex-shrink:0}
+  .nearcard .track{flex:1;height:14px;background:#eef1f4;border-radius:7px;overflow:hidden}
+  .nearcard .fill{height:100%;border-radius:7px}
+  .nearcard .pct{width:48px;text-align:right;font-family:Consolas,monospace;font-weight:700;font-size:12px}
+  .nearcard .nc-act{margin-top:10px;font-size:12.5px}
+  .nearcard a.nc-link{color:#1e5a9e;font-weight:600;text-decoration:none}
+  .welcome{background:#fff;border:1px solid #cfd8e0;border-radius:10px;padding:16px;margin-bottom:14px}
+  .geo-invite{display:flex;align-items:center;gap:12px;background:#e6f1fb;border:1px solid #b5d4f4;border-radius:10px;padding:12px 14px;margin-bottom:12px;flex-wrap:wrap}
+  .geo-invite.negada{background:#fbf3e0;border-color:#fac775}
+  .geo-invite .gi-txt{flex:1;min-width:180px;font-size:13px;color:#0C447C;line-height:1.35}
+  .geo-invite.negada .gi-txt{color:#854f0b}
+  .geo-invite .gi-txt i{font-size:18px;vertical-align:-3px;margin-right:4px}
+  .geo-invite .gi-btn{background:#1e5a9e;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .geo-invite .gi-btn:hover{background:#174a85}
+  .welcome h3{font-size:14px;color:#0C447C;margin-bottom:6px;font-weight:600}
+  .chips-quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .chip-q{background:#e6f1fb;color:#0C447C;border:none;border-radius:16px;padding:7px 13px;font-size:13px;cursor:pointer;font-weight:600}
+  .chip-q:hover{background:#d2e6fa}
   .medhead{margin:10px 0 10px}
   .medhead .toprow{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:2px solid #1e5a9e;padding-bottom:7px;flex-wrap:wrap}
   .medhead .name{font-size:16px;font-weight:600;color:#0C447C}
   .tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
   .tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:13px;display:inline-flex;align-items:center;gap:4px}
-  .t-lom{background:#e6f1fb;color:#0C447C}
-  .t-nolom{background:#faeee0;color:#a05a12}
-  .t-vital{background:#fbe9e7;color:#b03a2e}
-  .t-cat{background:#f1efe8;color:#444}
-  .sello{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:#666;align-items:center}
-  .sello .chip{background:#f4f6f8;border:1px solid #dde3e8;border-radius:6px;padding:3px 8px;display:inline-flex;gap:4px;align-items:center}
-  .sello .chip b{color:#0C447C;font-family:Consolas,monospace}
+  .t-lom{background:#e6f1fb;color:#0C447C}.t-nolom{background:#faeee0;color:#a05a12}
+  .t-vital{background:#fbe9e7;color:#b03a2e}.t-cat{background:#f1efe8;color:#444}
+  .sello{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:#666;align-items:center}
+  .sello .chip{background:#f4f6f8;border:1px solid #dde3e8;border-radius:6px;padding:3px 9px;display:inline-flex;gap:4px;align-items:center;cursor:help}
+  .sello .chip b{color:#0C447C}
   #map{height:300px;border:1px solid #a8a8a8;border-radius:8px;margin-bottom:8px;z-index:1}
   .map-stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
   .map-stats .st{flex:1;min-width:90px;background:#fff;border:1px solid #d8d8d8;border-radius:6px;padding:6px 8px;text-align:center}
@@ -76,11 +104,6 @@
   .n-ok{border-left:5px solid #1d9e75}.n-warn{border-left:5px solid #d89a1a}.n-bad{border-left:5px solid #c0392b}
   .s-ok{color:#1d9e75}.s-warn{color:#ba7517}.s-bad{color:#c0392b}
   .empty{padding:24px;text-align:center;color:#888;font-size:14px}
-  .welcome{background:#fff;border:1px solid #cfd8e0;border-radius:10px;padding:18px;margin-bottom:14px}
-  .welcome h3{font-size:15px;color:#0C447C;margin-bottom:8px;font-weight:600}
-  .chips-quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
-  .chip-q{background:#e6f1fb;color:#0C447C;border:none;border-radius:16px;padding:7px 13px;font-size:13px;cursor:pointer;font-weight:600}
-  .chip-q:hover{background:#d2e6fa}
   .suggest{position:absolute;top:48px;left:0;right:88px;background:#fff;border:1px solid #1e5a9e;border-top:none;border-radius:0 0 8px 8px;max-height:300px;overflow-y:auto;z-index:1000}
   .suggest div{padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid #eee}
   .suggest div:hover{background:#f0f6fc}
@@ -88,9 +111,12 @@
   .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:flex-end;justify-content:center}
   .modal-bg.show{display:flex}
   .modal{background:#fff;border-radius:14px 14px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:0 0 16px}
-  .modal .mhead{position:relative;height:150px;background:#0C447C;border-radius:14px 14px 0 0;overflow:hidden}
+  .modal .mhead{position:relative;height:150px;background:#0C447C;border-radius:14px 14px 0 0;overflow:hidden;display:flex;align-items:center;justify-content:center}
   .modal .mhead img{width:100%;height:100%;object-fit:cover}
-  .modal .mclose{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer}
+  .modal .mhead .ph{display:flex;flex-direction:column;align-items:center;gap:8px;color:#9fc4ec}
+  .modal .mhead .ph img{width:54px;height:54px;object-fit:contain}
+  .modal .mhead .ph span{font-size:12px}
+  .modal .mclose{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;z-index:2}
   .modal .mbody{padding:14px 18px}
   .modal .mname{font-size:17px;font-weight:600;color:#0C447C}
   .modal .mloc{font-size:13px;color:#666;margin-top:2px}
@@ -99,8 +125,13 @@
   .modal .mrow i{color:#1e5a9e;font-size:18px;width:20px;text-align:center}
   .modal .mact{display:flex;gap:8px;margin-top:14px}
   .modal .mact a{flex:1;text-align:center;text-decoration:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600}
-  .mact .call{background:#1d9e75;color:#fff}
-  .mact .route{background:#1e5a9e;color:#fff}
+  .mact .call{background:#1d9e75;color:#fff}.mact .route{background:#1e5a9e;color:#fff}
+  /* modal explicativo (texto) */
+  .info-modal .mbody h4{font-size:16px;color:#0C447C;margin-bottom:8px}
+  .info-modal .mbody p{font-size:13.5px;color:#444;margin-bottom:8px}
+  .info-modal .mbody .deftbl{width:100%;font-size:13px;margin:6px 0}
+  .info-modal .mbody .deftbl td{padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top}
+  .info-modal .mbody .deftbl td:first-child{font-weight:600;color:#0C447C;white-space:nowrap}
   @media(min-width:560px){.modal-bg{align-items:center}.modal{border-radius:14px}}
 </style>
 </head>
@@ -110,12 +141,15 @@
     <img src="icons/icon-192.png" alt="Caja de Seguro Social"/>
     <div><div class="sub">Búsqueda de medicamentos</div><div class="ttl">Mi Farma Digital</div></div>
   </div>
-  <button id="btnInstall">Instalar app</button>
-  <div class="hdr-right">Caja de Seguro Social · Panamá</div>
+  <div class="hdr-actions">
+    <button id="btnInstall">Instalar</button>
+    <div class="hdr-right">Caja de Seguro Social · Panamá</div>
+  </div>
 </header>
 
 <div class="wrap">
-  <div class="hero"><h1>¿Buscas tu medicina?</h1><p>Te decimos si hay y dónde está la unidad más cercana a ti.</p></div>
+  <button id="btnBack" onclick="volver()"><i class="ti ti-arrow-left"></i> Volver</button>
+  <div class="hero" id="hero"><h1>¿Buscas tu medicina?</h1><p>Te decimos si hay y dónde está la unidad más cercana a ti.</p></div>
 
   <div class="searchbar">
     <div class="searchbox"><i class="ti ti-search" style="color:#1e5a9e;font-size:20px"></i>
@@ -131,6 +165,9 @@
   </div>
 
   <div class="metrics" id="metrics"></div>
+  <div id="nearby"></div>
+  <div id="welcome"></div>
+
   <div id="medhead"></div>
   <div id="map" style="display:none"></div>
   <div class="map-stats" id="mapStats" style="display:none"></div>
@@ -141,7 +178,6 @@
     <span><span class="dot" style="background:#1e5a9e"></span>Tu ubicación</span>
   </div>
   <div class="scope" id="scope"></div>
-  <div id="welcome"></div>
   <div class="results" id="results"></div>
 </div>
 
@@ -149,11 +185,16 @@
 
 <script>
 const OPT=90;
-let D=null,map=null,heatMal=null,heatBien=null,markerLayer=null,userPos=null,selected=null,deferredPrompt=null;
+let D=null,map=null,heatMal=null,heatBien=null,markerLayer=null,userPos=null,selected=null,deferredPrompt=null,geoNegada=false;
 function norm(s){return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();}
 function f(n){return (n==null||n==='')?'—':Number(n).toLocaleString('es-PA');}
 function haversine(a,b,c,d){const R=6371,r=Math.PI/180;const dla=(c-a)*r,dlo=(d-b)*r;const x=Math.sin(dla/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dlo/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 const API_URL='';
+
+/* Traducción logística a lenguaje usuario (punto 7) */
+const ABC_USR={A:'Uso muy frecuente',B:'Uso frecuente',C:'Uso ocasional'};
+const XYZ_USR={X:'Demanda estable',Y:'Demanda variable',Z:'Demanda esporádica'};
+function pctColor(p){return p>=90?'#1d9e75':(p>=70?'#d89a1a':'#c0392b');}
 
 function estadoUE(saldo,dias,nivel){
   if(saldo<=0||nivel==='SIN EXISTENCIA')return {clr:'bad',col:'#c0392b',et:'Sin existencia',cv:'consulta otra unidad'};
@@ -179,7 +220,7 @@ cargarData().then(j=>{D=j;boot();}).catch(e=>{document.getElementById('results')
 function boot(){
   const m=D.meta;
   document.getElementById('metrics').innerHTML=
-    '<div class="mcard m-blue"><div class="big num">'+m.pct_disp+'</div><div class="lbl">disponibles · '+m.lom_disp+'/'+m.lom_total+' LOM</div></div>'+
+    '<div class="mcard m-blue"><button class="help" onclick="explicarMetrica()">ⓘ</button><div class="big num">'+m.pct_disp+'</div><div class="lbl">disponibles · '+m.lom_disp+'/'+m.lom_total+' LOM</div></div>'+
     '<div class="mcard m-white"><div class="big num">'+m.n_med+'</div><div class="lbl">medicamentos en seguimiento</div></div>'+
     '<div class="mcard m-amber"><div class="big num">'+m.vital_sin+'</div><div class="lbl">vitales por reponer</div></div>';
   const fp=document.getElementById('fProv');D.provincias.forEach(p=>fp.innerHTML+='<option>'+p+'</option>');
@@ -197,29 +238,91 @@ function boot(){
   pedirGeoSilencioso();
 }
 
+/* ===== Inicio: UE más cercana (puntos 2+4) ===== */
+function ueMasCercana(){
+  if(!userPos)return null;
+  let best=null,bd=1e9;
+  Object.keys(D.inst).forEach(id=>{const u=D.inst[id];if(!u.lat||!u.lom_tot)return;
+    const d=haversine(userPos[0],userPos[1],u.lat,u.lng);if(d<bd){bd=d;best={id:id,u:u,dist:d};}});
+  return best;
+}
+function renderNearby(){
+  const box=document.getElementById('nearby');
+  const near=ueMasCercana();
+  if(!near){box.innerHTML='';return;}
+  const u=near.u, nac=parseFloat(D.meta.pct_disp)||0, prov=(D.meta.prov_pct||{})[u.prov]||0;
+  const cmp = u.pct>=nac ? 'por encima del promedio nacional' : 'por debajo del promedio nacional';
+  box.innerHTML=
+    '<div class="nearcard"><div class="nc-top"><i class="ti ti-map-pin"></i> Tu unidad más cercana · a '+near.dist.toFixed(1)+' km</div>'+
+    '<div class="nc-body"><div class="nc-name">'+u.nombre+'</div>'+
+    '<div class="nc-loc">'+(u.loc||'')+' · '+u.prov+' · '+u.tipo+'</div>'+
+    '<div class="nc-bars">'+
+      barra('Esta unidad',u.pct)+
+      barra('Tu provincia',prov)+
+      barra('Nacional',nac)+
+    '</div>'+
+    '<div class="nc-act">Tiene <b>'+u.lom_con+'</b> de <b>'+u.lom_tot+'</b> medicamentos de la Lista Oficial — '+cmp+'.'+
+    ' &nbsp;<a class="nc-link" href="javascript:abrirModalUE(\''+near.id+'\','+near.dist.toFixed(2)+')">Ver detalle y contacto →</a></div>'+
+    '</div></div>';
+}
+function barra(lab,pct){const c=pctColor(pct);
+  return '<div class="barrow"><span class="lab">'+lab+'</span><div class="track"><div class="fill" style="width:'+Math.min(100,pct)+'%;background:'+c+'"></div></div><span class="pct" style="color:'+c+'">'+pct+'%</span></div>';}
+
 function renderWelcome(){if(selected)return;
+  if(userPos){document.getElementById('welcome').innerHTML='';return;} // si hay geo, la near card es suficiente
   const vitales=D.sku.filter(s=>s.vital==='VITAL'&&s.lom==='LOM').slice(0,6);
-  document.getElementById('welcome').innerHTML=
-    '<div class="welcome"><h3>Empieza buscando un medicamento</h3>'+
+  // Invitación a activar ubicación (estado intermedio, estilo apps de autos)
+  let geoInvite='';
+  if(geoNegada){
+    geoInvite='<div class="geo-invite negada"><div class="gi-txt"><i class="ti ti-map-pin-off"></i> '+
+      'Ubicación desactivada. Puedes buscar igual, pero activándola te mostramos la unidad más cercana y ordenamos por distancia.</div>'+
+      '<button class="gi-btn" onclick="useGeo()">Activar ubicación</button></div>';
+  }else{
+    geoInvite='<div class="geo-invite"><div class="gi-txt"><i class="ti ti-map-pin"></i> '+
+      '<b>Activa tu ubicación</b> para ver tu unidad de salud más cercana y su abastecimiento.</div>'+
+      '<button class="gi-btn" onclick="useGeo()">Usar mi ubicación</button></div>';
+  }
+  document.getElementById('welcome').innerHTML=geoInvite+
+    '<div class="welcome"><h3>O busca un medicamento</h3>'+
     '<div style="font-size:13px;color:#555">Escribe el nombre arriba, o consulta uno de los más frecuentes:</div>'+
     '<div class="chips-quick">'+vitales.map(s=>'<button class="chip-q" onclick="pick(\''+s.cod+'\')">'+s.nombre.split(',')[0]+'</button>').join('')+'</div></div>';
 }
+
 function doSearch(){const v=norm(document.getElementById('q').value);if(v.length<2)return;
   const hit=D.sku.find(s=>norm(s.nombre)===v)||D.sku.find(s=>norm(s.nombre).includes(v));if(hit)pick(hit.cod);}
 function pick(cod){selected=D.sku.find(s=>s.cod===cod);
   document.getElementById('q').value=selected.nombre;document.getElementById('suggest').style.display='none';
-  document.getElementById('welcome').innerHTML='';renderHead();renderResults();
-  document.getElementById('medhead').scrollIntoView({behavior:'smooth',block:'start'});}
+  document.getElementById('welcome').innerHTML='';document.getElementById('nearby').innerHTML='';
+  document.getElementById('hero').style.display='none';
+  document.getElementById('btnBack').classList.add('show');
+  renderHead();renderResults();
+  document.getElementById('btnBack').scrollIntoView({behavior:'smooth',block:'start'});}
+
+/* ===== Volver (punto 5) ===== */
+function volver(){
+  selected=null;
+  document.getElementById('q').value='';
+  document.getElementById('medhead').innerHTML='';
+  document.getElementById('results').innerHTML='';
+  document.getElementById('map').style.display='none';
+  document.getElementById('mapStats').style.display='none';
+  document.getElementById('legend').style.display='none';
+  document.getElementById('scope').innerHTML='';
+  document.getElementById('hero').style.display='block';
+  document.getElementById('btnBack').classList.remove('show');
+  renderNearby();renderWelcome();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 function renderHead(){const s=selected;
   let tags='<span class="tag '+(s.lom==='LOM'?'t-lom':'t-nolom')+'">'+s.lom+'</span>';
-  if(s.vital==='VITAL')tags+='<span class="tag t-vital"><i class="ti ti-alert-triangle"></i> Vital</span>';
   if(s.sistema)tags+='<span class="tag t-cat">'+s.sistema+'</span>';
-  let sello='';
-  if(s.abc||s.xyz){sello='<div class="sello"><span style="color:#888">Clasificación logística:</span>'+
-    (s.abc?'<span class="chip">Rotación <b>'+s.abc+'</b></span>':'')+
-    (s.xyz?'<span class="chip">Demanda <b>'+s.xyz+'</b></span>':'')+
-    (s.vital==='VITAL'?'<span class="chip" style="border-color:#f0c0b8;background:#fbe9e7;color:#b03a2e"><i class="ti ti-star"></i> Medicamento vital</span>':'')+'</div>';}
+  // sello logístico en lenguaje usuario (sin redundar "Vital")
+  let chips=[];
+  if(s.abc&&ABC_USR[s.abc])chips.push('<span class="chip" title="Frecuencia de uso del medicamento">'+ABC_USR[s.abc]+'</span>');
+  if(s.xyz&&XYZ_USR[s.xyz])chips.push('<span class="chip" title="Estabilidad de la demanda">'+XYZ_USR[s.xyz]+'</span>');
+  if(s.vital==='VITAL')chips.push('<span class="chip" style="border-color:#f0c0b8;background:#fbe9e7;color:#b03a2e" title="Medicamento de importancia vital">★ Vital</span>');
+  let sello = chips.length?('<div class="sello"><span style="color:#888">Perfil:</span>'+chips.join('')+'<button class="help" style="position:static;opacity:.6" onclick="explicarPerfil()">ⓘ ¿qué significa?</button></div>'):'';
   document.getElementById('medhead').innerHTML='<div class="medhead"><div class="toprow"><div class="name">'+s.nombre+'</div><div class="tags">'+tags+'</div></div>'+sello+'</div>';
 }
 
@@ -262,8 +365,12 @@ function renderMap(filas){
   const pts=[];
   filas.forEach((x,i)=>{if(!x.lat)return;const e=estadoUE(x.saldo,x.dias,x.nivel);
     const mk=L.circleMarker([x.lat,x.lng],{radius:8,fillColor:e.col,color:'#fff',weight:1.5,fillOpacity:.95});
-    mk.on('click',()=>abrirModal(i));markerLayer.addLayer(mk);pts.push([x.lat,x.lng]);});
-  if(userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(markerLayer);pts.push(userPos);}
+    const cob=x.saldo>0?('<br>'+e.et+' · '+e.cv):'<br>Sin existencia';
+    const tel=x.tel?'<br><i>'+x.tel.split(';')[0]+'</i>':'';
+    mk.bindPopup('<b>'+x.nombre+'</b><br>'+(x.loc||x.prov)+' · '+(x.tipo||'')+cob+'<br>Existencia: '+f(x.saldo)+tel+'<br><a href="javascript:abrirModal('+i+')">Ver más →</a>');
+    mk.on('click',function(){this.openPopup();});
+    markerLayer.addLayer(mk);pts.push([x.lat,x.lng]);});
+  if(userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(markerLayer).bindPopup('Tu ubicación');pts.push(userPos);}
   if(pts.length){try{map.fitBounds(pts,{padding:[35,35],maxZoom:userPos?12:9});}catch(e){}}
   setTimeout(()=>map.invalidateSize(),200);drawMapStats(filas);
 }
@@ -282,19 +389,34 @@ function drawMapStats(filas){
     '<div class="st"><div class="v" style="color:#c0392b">'+desab+'</div><div class="l">sin existencia<br>saldo cero</div></div>';
 }
 
-function abrirModal(i){const x=(window._filas||[])[i];if(!x)return;
-  const e=estadoUE(x.saldo,x.dias,x.nivel);
-  const bg={ok:'#e1f5ee',warn:'#fbf3e0',bad:'#fbeaea'}[e.clr];
+/* ===== Modal UE desde resultados (punto 6,8) ===== */
+function abrirModal(i){const x=(window._filas||[])[i];if(!x)return;modalUE(x,x.dist);}
+function abrirModalUE(id,dist){const u=D.inst[id];if(!u)return;
+  modalUE({nombre:u.nombre,loc:u.loc,prov:u.prov,tipo:u.tipo,tel:u.tel,foto:u.foto,lat:u.lat,lng:u.lng,
+           saldo:null,resumen:{con:u.lom_con,tot:u.lom_tot,pct:u.pct,med:u.med_dias}},dist);}
+function modalUE(x,dist){
+  const m=document.getElementById('modal');document.getElementById('modal').classList.remove('info-modal');
   const foto=x.foto?(x.foto.indexOf('http')===0?x.foto:'icons/'+x.foto):'';
   const tel1=x.tel?x.tel.split(';')[0].trim():'';
-  const m=document.getElementById('modal');
-  m.innerHTML='<div class="mhead">'+(foto?'<img src="'+foto+'" onerror="this.remove()"/>':'')+
+  let bloque='';
+  if(x.saldo!=null){ // viene de un medicamento concreto
+    const e=estadoUE(x.saldo,x.dias,x.nivel);
+    const bg={ok:'#e1f5ee',warn:'#fbf3e0',bad:'#fbeaea'}[e.clr];
+    bloque='<div class="mstat s-'+e.clr+'" style="background:'+bg+';color:'+e.col+'">'+e.et+' · '+e.cv+'</div>'+
+      '<div class="mrow"><i class="ti ti-package"></i> Existencia: <b style="margin-left:4px">'+f(x.saldo)+'</b> unidades</div>'+
+      (x.cons!=null&&x.cons>0?'<div class="mrow"><i class="ti ti-activity"></i> Consumo diario: ~'+f(Math.round(x.cons))+' u.</div>':'');
+  } else if(x.resumen){ // viene de la near card (resumen de la UE)
+    const c=pctColor(x.resumen.pct);
+    bloque='<div class="mstat" style="background:#eef4fb;color:'+c+'">Abastecimiento general: '+x.resumen.pct+'%</div>'+
+      '<div class="mrow"><i class="ti ti-checklist"></i> Tiene '+x.resumen.con+' de '+x.resumen.tot+' medicamentos de la Lista Oficial</div>'+
+      (x.resumen.med!=null?'<div class="mrow"><i class="ti ti-calendar"></i> Cobertura mediana: ~'+x.resumen.med+' días</div>':'');
+  }
+  m.innerHTML='<div class="mhead">'+(foto?'<img src="'+foto+'" onerror="this.outerHTML=\'<div class=ph><img src=icons/icon-192.png><span>Caja de Seguro Social</span></div>\'"/>':'<div class="ph"><img src="icons/icon-192.png"><span>Caja de Seguro Social</span></div>')+
     '<button class="mclose" onclick="cerrarModal()" aria-label="Cerrar">×</button></div>'+
     '<div class="mbody"><div class="mname">'+x.nombre+'</div>'+
     '<div class="mloc"><i class="ti ti-map-pin"></i> '+(x.loc||'')+' · '+(x.prov||'')+' · '+(x.tipo||'')+'</div>'+
-    '<div class="mstat s-'+e.clr+'" style="background:'+bg+';color:'+e.col+'">'+e.et+' · '+e.cv+'</div>'+
-    '<div class="mrow"><i class="ti ti-package"></i> Existencia: <b style="margin-left:4px">'+f(x.saldo)+'</b> unidades</div>'+
-    (x.dist!=null?'<div class="mrow"><i class="ti ti-route"></i> A '+x.dist.toFixed(1)+' km de tu ubicación</div>':'')+
+    bloque+
+    (dist!=null?'<div class="mrow"><i class="ti ti-route"></i> A '+Number(dist).toFixed(1)+' km de tu ubicación</div>':'')+
     (tel1?'<div class="mrow"><i class="ti ti-phone"></i> '+x.tel.replace(/;/g,' · ')+'</div>':'')+
     '<div class="mact">'+
     (tel1?'<a class="call" href="tel:'+tel1.replace(/[^0-9]/g,'')+'"><i class="ti ti-phone"></i> Llamar</a>':'')+
@@ -305,19 +427,43 @@ function abrirModal(i){const x=(window._filas||[])[i];if(!x)return;
 }
 function cerrarModal(){document.getElementById('modalBg').classList.remove('show');}
 
+/* ===== Modales explicativos (punto 7, imprescindibles) ===== */
+function infoModal(html){const m=document.getElementById('modal');m.classList.add('info-modal');
+  m.innerHTML='<div class="mbody" style="padding-top:18px"><button class="mclose" style="background:#0C447C;position:relative;float:right;top:-6px" onclick="cerrarModal()">×</button>'+html+'</div>';
+  document.getElementById('modalBg').classList.add('show');}
+function explicarMetrica(){infoModal(
+  '<h4>¿Cómo se calcula la disponibilidad?</h4>'+
+  '<p>Es el porcentaje de medicamentos de la <b>Lista Oficial (LOM)</b> que tienen existencia en al menos una unidad de la red, a nivel nacional.</p>'+
+  '<p>Se considera <b>óptimo por encima de 90%</b>. No incluye medicamentos fuera de la Lista Oficial.</p>');}
+function explicarPerfil(){infoModal(
+  '<h4>Perfil del medicamento</h4>'+
+  '<p>Estas etiquetas describen el rol del medicamento en la red, en lenguaje sencillo:</p>'+
+  '<table class="deftbl">'+
+  '<tr><td>Uso muy frecuente / frecuente / ocasional</td><td>Qué tanto se usa este medicamento en la red.</td></tr>'+
+  '<tr><td>Demanda estable / variable / esporádica</td><td>Qué tan constante es su consumo mes a mes.</td></tr>'+
+  '<tr><td>★ Vital</td><td>Medicamento de importancia crítica para la atención.</td></tr>'+
+  '</table>');}
+
+/* ===== Geo (puntos 3,4) ===== */
+function activarGeo(p){userPos=[p.coords.latitude,p.coords.longitude];
+  const b=document.getElementById('btnGeo');b.classList.add('active');b.innerHTML='<i class="ti ti-map-pin"></i> Ubicación activa';
+  if(selected){renderResults();} else {renderNearby();renderWelcome();}
+  if(map&&!selected)map.flyTo(userPos,11,{duration:.6});
+}
 function pedirGeoSilencioso(){if(!navigator.geolocation)return;
-  navigator.geolocation.getCurrentPosition(p=>{userPos=[p.coords.latitude,p.coords.longitude];
-    const b=document.getElementById('btnGeo');b.classList.add('active');b.innerHTML='<i class="ti ti-map-pin"></i> Ubicación activa';
-    if(selected)renderResults();},()=>{},{enableHighAccuracy:false,timeout:6000,maximumAge:600000});}
+  navigator.geolocation.getCurrentPosition(activarGeo,err=>{
+    if(err&&err.code===1){geoNegada=true;if(!selected)renderWelcome();} // 1 = permiso denegado
+  },{enableHighAccuracy:false,timeout:6000,maximumAge:600000});}
 function useGeo(){if(!navigator.geolocation){alert('Tu dispositivo no permite ubicación.');return;}
-  navigator.geolocation.getCurrentPosition(p=>{userPos=[p.coords.latitude,p.coords.longitude];
-    const b=document.getElementById('btnGeo');b.classList.add('active');b.innerHTML='<i class="ti ti-map-pin"></i> Ubicación activa';
-    if(selected)renderResults();else alert('Ubicación activada. Busca un medicamento para ordenar por cercanía.');},
-    ()=>alert('No se pudo obtener tu ubicación. Revisa los permisos del navegador.'));}
+  navigator.geolocation.getCurrentPosition(activarGeo,err=>{
+    if(err&&err.code===1){geoNegada=true;if(!selected)renderWelcome();
+      alert('La ubicación está bloqueada para este sitio. Actívala en los permisos del navegador (ícono de candado junto a la dirección).');}
+    else alert('No se pudo obtener tu ubicación. Intenta de nuevo.');
+  });}
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;
-  const b=document.getElementById('btnInstall');b.style.display='block';
+  const b=document.getElementById('btnInstall');b.style.display='inline-block';
   b.onclick=async()=>{b.style.display='none';deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;};});
 </script>
 </body>
