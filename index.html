@@ -84,6 +84,9 @@
   .sello{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:#666;align-items:center}
   .sello .chip{background:#f4f6f8;border:1px solid #dde3e8;border-radius:6px;padding:3px 9px;display:inline-flex;gap:4px;align-items:center;cursor:help}
   .sello .chip b{color:#0C447C}
+  #mapViews{display:flex}
+  .mv-btn{flex:1;background:#fff;border:1px solid #a8a8a8;color:#444;border-radius:6px;padding:8px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .mv-btn.active{background:#1e5a9e;color:#fff;border-color:#1e5a9e}
   #map{height:300px;border:1px solid #a8a8a8;border-radius:8px;margin-bottom:8px;z-index:1}
   .map-stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
   .map-stats .st{flex:1;min-width:90px;background:#fff;border:1px solid #d8d8d8;border-radius:6px;padding:6px 8px;text-align:center}
@@ -169,6 +172,11 @@
   <div id="welcome"></div>
 
   <div id="medhead"></div>
+  <div id="mapViews" style="display:none;gap:6px;margin-bottom:8px">
+    <button class="mv-btn" data-v="pais" onclick="setVista('pais')">Vista país</button>
+    <button class="mv-btn" data-v="prov" onclick="setVista('prov')">Mi provincia</button>
+    <button class="mv-btn" data-v="sector" onclick="setVista('sector')">Mi sector</button>
+  </div>
   <div id="map" style="display:none"></div>
   <div class="map-stats" id="mapStats" style="display:none"></div>
   <div class="legend" id="legend" style="display:none">
@@ -185,7 +193,8 @@
 
 <script>
 const OPT=90;
-let D=null,map=null,heatMal=null,heatBien=null,markerLayer=null,userPos=null,selected=null,deferredPrompt=null,geoNegada=false;
+const RADIO_SECTOR=10; // km — define "mi sector" (mi zona cercana)
+let D=null,map=null,heatMal=null,heatBien=null,markerLayer=null,userPos=null,selected=null,deferredPrompt=null,geoNegada=false,vistaMapa='auto';
 function norm(s){return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();}
 function f(n){return (n==null||n==='')?'—':Number(n).toLocaleString('es-PA');}
 function haversine(a,b,c,d){const R=6371,r=Math.PI/180;const dla=(c-a)*r,dlo=(d-b)*r;const x=Math.sin(dla/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dlo/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
@@ -218,25 +227,65 @@ function viaGAS(res,rej){if(!API_URL)return rej(new Error('sin datos'));
 cargarData().then(j=>{D=j;boot();}).catch(e=>{document.getElementById('results').innerHTML='<div class="empty">No se pudo cargar la información. Intente más tarde.</div>';console.error(e);});
 
 function boot(){
-  const m=D.meta;
-  document.getElementById('metrics').innerHTML=
-    '<div class="mcard m-blue"><button class="help" onclick="explicarMetrica()">ⓘ</button><div class="big num">'+m.pct_disp+'</div><div class="lbl">disponibles · '+m.lom_disp+'/'+m.lom_total+' LOM</div></div>'+
-    '<div class="mcard m-white"><div class="big num">'+m.n_med+'</div><div class="lbl">medicamentos en seguimiento</div></div>'+
-    '<div class="mcard m-amber"><div class="big num">'+m.vital_sin+'</div><div class="lbl">vitales por reponer</div></div>';
+  renderMetrics(null);
   const fp=document.getElementById('fProv');D.provincias.forEach(p=>fp.innerHTML+='<option>'+p+'</option>');
   const ft=document.getElementById('fTipo');D.tipos.forEach(t=>ft.innerHTML+='<option>'+t+'</option>');
   fp.onchange=ft.onchange=()=>{if(selected)renderResults();};
   const q=document.getElementById('q'),sg=document.getElementById('suggest');
-  q.addEventListener('input',()=>{const v=norm(q.value);if(v.length<2){sg.style.display='none';return;}
+  q.addEventListener('input',()=>{
+    if(selected){selected=null;} // limpiar selección al reescribir (punto: limpiar auto)
+    const v=norm(q.value);if(v.length<2){sg.style.display='none';sgIdx=-1;return;}
     const hits=D.sku.filter(s=>norm(s.nombre).includes(v)).slice(0,12);
-    if(!hits.length){sg.style.display='none';return;}
-    sg.innerHTML=hits.map(s=>'<div onclick="pick(\''+s.cod+'\')">'+s.nombre+'<span class="sg-tag">'+s.lom+(s.vital==='VITAL'?' · Vital':'')+'</span></div>').join('');
+    if(!hits.length){sg.style.display='none';sgIdx=-1;return;}
+    sgHits=hits;sgIdx=-1;
+    sg.innerHTML=hits.map((s,i)=>'<div data-i="'+i+'" onclick="pick(\''+s.cod+'\')">'+s.nombre+'<span class="sg-tag">'+s.lom+(s.vital==='VITAL'?' · Vital':'')+'</span></div>').join('');
     sg.style.display='block';});
-  q.addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
-  document.addEventListener('click',e=>{if(!e.target.closest('.searchbar'))sg.style.display='none';});
+  q.addEventListener('keydown',e=>{
+    const sgv=document.getElementById('suggest');
+    if(sgv.style.display==='block'&&sgHits.length){
+      if(e.key==='ArrowDown'){e.preventDefault();sgIdx=Math.min(sgIdx+1,sgHits.length-1);marcaSug();return;}
+      if(e.key==='ArrowUp'){e.preventDefault();sgIdx=Math.max(sgIdx-1,0);marcaSug();return;}
+      if(e.key==='Enter'){e.preventDefault();if(sgIdx>=0){pick(sgHits[sgIdx].cod);}else{doSearch();}return;}
+    } else if(e.key==='Enter'){doSearch();}
+  });
+  q.addEventListener('focus',()=>{ if(selected){q.value='';selected=null;} }); // limpiar al reenfocar con renglón ya elegido
+  document.addEventListener('click',e=>{if(!e.target.closest('.searchbar')){sg.style.display='none';sgIdx=-1;}});
   renderWelcome();
   pedirGeoSilencioso();
 }
+let sgHits=[],sgIdx=-1;
+function marcaSug(){const sg=document.getElementById('suggest');[].forEach.call(sg.children,(d,i)=>{d.style.background=(i===sgIdx)?'#e6f1fb':'';});}
+
+/* Métrica de arriba: estática (sin renglón) o inteligente (con renglón elegido) */
+function renderMetrics(sku){
+  const m=D.meta, box=document.getElementById('metrics');
+  if(!sku){
+    box.innerHTML=
+      '<div class="mcard m-blue"><button class="help" onclick="explicarMetrica()">ⓘ</button><div class="big num">'+m.pct_disp+'</div><div class="lbl">disponibles · '+m.lom_disp+'/'+m.lom_total+' LOM</div></div>'+
+      '<div class="mcard m-white"><div class="big num">'+m.n_med+'</div><div class="lbl">medicamentos en seguimiento</div></div>'+
+      '<div class="mcard m-amber"><div class="big num">'+m.vital_sin+'</div><div class="lbl">vitales por reponer</div></div>';
+    return;
+  }
+  // inteligente: % de ESTE renglón disponible nacional / provincial / mi sector
+  const filas=(D.det[sku.cod]||[]);
+  const pctOf=arr=>{const t=arr.length;if(!t)return null;const c=arr.filter(x=>x.saldo>0).length;return Math.round(c/t*100);};
+  const nac=pctOf(filas);
+  let prov=null,sect=null,provName='',sectN=0;
+  if(userPos){
+    // provincia del usuario = la de su UE más cercana
+    const near=ueMasCercana(); provName=near?near.u.prov:'';
+    if(provName)prov=pctOf(filas.filter(x=>x.prov===provName));
+    const ensector=filas.filter(x=>x.lat&&haversine(userPos[0],userPos[1],x.lat,x.lng)<=RADIO_SECTOR);
+    sectN=ensector.length; sect=pctOf(ensector);
+  }
+  function card(lbl,p,extra){const c=p==null?'#888':pctColor2(p);
+    return '<div class="mcard m-white" style="border-color:'+c+'33"><div class="big num" style="color:'+c+'">'+(p==null?'—':p+'%')+'</div><div class="lbl">'+lbl+(extra?'<br>'+extra:'')+'</div></div>';}
+  box.innerHTML=
+    card('disponible nacional','','').replace('—',nac==null?'—':nac+'%').replace('color:#888',nac==null?'color:#888':'color:'+pctColor2(nac))+
+    (userPos?card('en tu provincia',prov,provName):card('en tu provincia',null,'activa ubicación'))+
+    (userPos?card('en tu sector',sect,sectN+' unidades a ≤'+RADIO_SECTOR+'km'):card('en tu sector',null,'activa ubicación'));
+}
+function pctColor2(p){return p>=90?'#1d9e75':(p>=60?'#d89a1a':'#c0392b');}
 
 /* ===== Inicio: UE más cercana (puntos 2+4) ===== */
 function ueMasCercana(){
@@ -295,7 +344,7 @@ function pick(cod){selected=D.sku.find(s=>s.cod===cod);
   document.getElementById('welcome').innerHTML='';document.getElementById('nearby').innerHTML='';
   document.getElementById('hero').style.display='none';
   document.getElementById('btnBack').classList.add('show');
-  renderHead();renderResults();
+  renderMetrics(selected);renderHead();renderResults();
   document.getElementById('btnBack').scrollIntoView({behavior:'smooth',block:'start'});}
 
 /* ===== Volver (punto 5) ===== */
@@ -307,10 +356,11 @@ function volver(){
   document.getElementById('map').style.display='none';
   document.getElementById('mapStats').style.display='none';
   document.getElementById('legend').style.display='none';
+  document.getElementById('mapViews').style.display='none';
   document.getElementById('scope').innerHTML='';
   document.getElementById('hero').style.display='block';
   document.getElementById('btnBack').classList.remove('show');
-  renderNearby();renderWelcome();
+  renderMetrics(null);renderNearby();renderWelcome();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -341,11 +391,11 @@ function renderResults(){const filas=filasActivas();
   const box=document.getElementById('results');
   if(!filas.length){box.innerHTML='<div class="empty">No hay unidades para los filtros seleccionados.</div>';return;}
   box.innerHTML=filas.map((x,i)=>{const e=estadoUE(x.saldo,x.dias,x.nivel);
-    const dist=x.dist!=null?' · '+x.dist.toFixed(1)+' km':'';
-    const tel=x.tel?' · <i class="ti ti-phone"></i> '+x.tel.split(';')[0]:'';
-    const exist=x.saldo>0?' · '+f(x.saldo)+' u.':'';
+    const dist=x.dist!=null?'<span style="color:#1e5a9e"> · '+x.dist.toFixed(1)+' km</span>':'';
+    const tel=x.tel?' · <span style="color:#888"><i class="ti ti-phone"></i> '+x.tel.split(';')[0]+'</span>':'';
+    const exist=x.saldo>0?' · <span style="color:#0f6e56">'+f(x.saldo)+' u.</span>':'';
     return '<div class="rcard n-'+e.clr+'" tabindex="0" onclick="abrirModal('+i+')" onkeypress="if(event.key===\'Enter\')abrirModal('+i+')">'+
-      '<div class="info"><div class="nm">'+x.nombre+'</div><div class="meta"><i class="ti ti-map-pin"></i> '+(x.loc||x.prov)+dist+tel+exist+'</div></div>'+
+      '<div class="info"><div class="nm">'+x.nombre+'</div><div class="meta"><span style="color:#0C447C;font-weight:600"><i class="ti ti-map-pin"></i> '+(x.loc||x.prov)+'</span>'+dist+tel+exist+'</div></div>'+
       '<div class="stat"><div class="st s-'+e.clr+'">'+e.et+'</div><div class="cv">'+e.cv+'</div></div></div>';}).join('');
   window._filas=filas;
 }
@@ -354,6 +404,8 @@ function renderMap(filas){
   document.getElementById('map').style.display='block';
   document.getElementById('mapStats').style.display='flex';
   document.getElementById('legend').style.display='flex';
+  document.getElementById('mapViews').style.display='flex';
+  marcaVista();
   if(!map){map=L.map('map',{scrollWheelZoom:false});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);markerLayer=L.layerGroup().addTo(map);}
   markerLayer.clearLayers();
   if(heatMal){map.removeLayer(heatMal);heatMal=null;}if(heatBien){map.removeLayer(heatBien);heatBien=null;}
@@ -370,10 +422,30 @@ function renderMap(filas){
     mk.bindPopup('<b>'+x.nombre+'</b><br>'+(x.loc||x.prov)+' · '+(x.tipo||'')+cob+'<br>Existencia: '+f(x.saldo)+tel+'<br><a href="javascript:abrirModal('+i+')">Ver más →</a>');
     mk.on('click',function(){this.openPopup();});
     markerLayer.addLayer(mk);pts.push([x.lat,x.lng]);});
-  if(userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(markerLayer).bindPopup('Tu ubicación');pts.push(userPos);}
-  if(pts.length){try{map.fitBounds(pts,{padding:[35,35],maxZoom:userPos?12:9});}catch(e){}}
+  if(userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(markerLayer).bindPopup('Tu ubicación');}
+  window._mapPts=pts;
+  encuadrar(filas);
   setTimeout(()=>map.invalidateSize(),200);drawMapStats(filas);
 }
+function encuadrar(filas){
+  if(!map)return;
+  if(vistaMapa==='sector'&&userPos){map.setView(userPos,12);return;}
+  if(vistaMapa==='prov'&&userPos){
+    const near=ueMasCercana();const pr=near?near.u.prov:null;
+    const pp=filas.filter(x=>x.lat&&x.prov===pr).map(x=>[x.lat,x.lng]);
+    if(pp.length){try{map.fitBounds(pp,{padding:[35,35],maxZoom:11});}catch(e){}return;}
+  }
+  if(vistaMapa==='pais'){const all=filas.filter(x=>x.lat).map(x=>[x.lat,x.lng]);if(all.length){try{map.fitBounds(all,{padding:[30,30],maxZoom:9});}catch(e){}return;}}
+  // auto
+  const pts=(window._mapPts||[]).slice();if(userPos)pts.push(userPos);
+  if(pts.length){try{map.fitBounds(pts,{padding:[35,35],maxZoom:userPos?12:9});}catch(e){}}
+}
+function setVista(v){vistaMapa=v;marcaVista();if(selected)encuadrar(filasActivas());}
+function marcaVista(){const has=!!userPos;[].forEach.call(document.querySelectorAll('.mv-btn'),b=>{
+  const v=b.getAttribute('data-v');
+  b.classList.toggle('active',vistaMapa===v||(vistaMapa==='auto'&&v==='sector'&&has)||(vistaMapa==='auto'&&v==='pais'&&!has));
+  if((v==='prov'||v==='sector')&&!has){b.disabled=true;b.style.opacity=.5;b.title='Activa tu ubicación';}else{b.disabled=false;b.style.opacity=1;b.title='';}
+});}
 function drawMapStats(filas){
   const conStock=filas.filter(x=>x.saldo>0);
   const reales=conStock.filter(x=>x.dias>0&&x.dias<9999).map(x=>x.dias).sort((a,b)=>a-b);
@@ -402,9 +474,19 @@ function modalUE(x,dist){
   if(x.saldo!=null){ // viene de un medicamento concreto
     const e=estadoUE(x.saldo,x.dias,x.nivel);
     const bg={ok:'#e1f5ee',warn:'#fbf3e0',bad:'#fbeaea'}[e.clr];
+    let perfil='';
+    if(selected){const s=selected;let chips=[];
+      if(s.abc&&ABC_USR[s.abc])chips.push(ABC_USR[s.abc]);
+      if(s.xyz&&XYZ_USR[s.xyz])chips.push(XYZ_USR[s.xyz]);
+      if(s.vital==='VITAL')chips.push('★ Vital');
+      perfil='<div class="mrow" style="border-top:1px solid #eee;color:#0C447C;font-weight:600">'+s.nombre+'</div>'+
+        (s.sistema?'<div class="mrow"><i class="ti ti-stethoscope"></i> '+s.sistema+'</div>':'')+
+        (chips.length?'<div class="mrow"><i class="ti ti-tag"></i> '+chips.join(' · ')+'</div>':'');
+    }
     bloque='<div class="mstat s-'+e.clr+'" style="background:'+bg+';color:'+e.col+'">'+e.et+' · '+e.cv+'</div>'+
       '<div class="mrow"><i class="ti ti-package"></i> Existencia: <b style="margin-left:4px">'+f(x.saldo)+'</b> unidades</div>'+
-      (x.cons!=null&&x.cons>0?'<div class="mrow"><i class="ti ti-activity"></i> Consumo diario: ~'+f(Math.round(x.cons))+' u.</div>':'');
+      (x.cons!=null&&x.cons>0?'<div class="mrow"><i class="ti ti-activity"></i> Consumo diario: ~'+f(Math.round(x.cons))+' u.</div>':'')+
+      perfil;
   } else if(x.resumen){ // viene de la near card (resumen de la UE)
     const c=pctColor(x.resumen.pct);
     bloque='<div class="mstat" style="background:#eef4fb;color:'+c+'">Abastecimiento general: '+x.resumen.pct+'%</div>'+
@@ -445,9 +527,9 @@ function explicarPerfil(){infoModal(
   '</table>');}
 
 /* ===== Geo (puntos 3,4) ===== */
-function activarGeo(p){userPos=[p.coords.latitude,p.coords.longitude];
-  const b=document.getElementById('btnGeo');b.classList.add('active');b.innerHTML='<i class="ti ti-map-pin"></i> Ubicación activa';
-  if(selected){renderResults();} else {renderNearby();renderWelcome();}
+function activarGeo(p){userPos=[p.coords.latitude,p.coords.longitude];geoNegada=false;
+  document.getElementById('btnGeo').style.display='none'; // quitar botón cuando ya está activa
+  if(selected){renderMetrics(selected);renderResults();} else {renderNearby();renderWelcome();}
   if(map&&!selected)map.flyTo(userPos,11,{duration:.6});
 }
 function pedirGeoSilencioso(){if(!navigator.geolocation)return;
