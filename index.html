@@ -14,6 +14,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+<script src="polygons_provincias.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -27,7 +29,7 @@
   .hdr-actions{display:flex;align-items:center;gap:8px}
   #btnInstall{display:none;background:transparent;color:#cfe0f3;border:1px solid #4a78ad;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer}
   .hdr-right{color:#9fc4ec;font-size:11px}
-  .wrap{max-width:1100px;margin:0 auto;padding:14px 16px 40px}
+  .wrap{max-width:1320px;margin:0 auto;padding:14px 20px 40px}
   #btnBack{display:none;background:none;border:none;color:#1e5a9e;font-size:14px;font-weight:600;cursor:pointer;padding:6px 0;margin-bottom:4px;align-items:center;gap:5px}
   #btnBack.show{display:inline-flex}
   .hero{text-align:center;margin:6px 0 12px}
@@ -203,10 +205,6 @@
   </div>
   <div class="scope" id="scope"></div>
   <div class="results" id="results"></div>
-
-  <div id="listadoBtn" style="text-align:center;margin-top:20px">
-    <button class="btn-ghost" onclick="abrirListado()" style="padding:10px 18px"><i class="ti ti-table"></i> Ver listado nacional consolidado (LOM)</button>
-  </div>
 </div>
 
 <div class="modal-bg" id="tablaBg" onclick="if(event.target===this)cerrarTabla()">
@@ -258,12 +256,12 @@ function boot(){
   const sistemas=[...new Set(D.sku.filter(s=>s.sistema).map(s=>s.sistema))].sort();
   sistemas.forEach(s=>fs.innerHTML+='<option>'+s+'</option>');
   const fc=document.getElementById('fCrit');
-  fs.onchange=fc.onchange=()=>{if(selected)renderResults();};
+  fs.onchange=fc.onchange=()=>{ if(selected)renderResults(); else renderNearby(); };
   fp.onchange=()=>{
     if(selected){vistaMapa='pais';marcaVista();renderResults();}
     else{ provFiltroInicio=fp.value; renderMetrics(null); renderNearby(); } // tarjetas + mapa adaptados a provincia
   };
-  ft.onchange=()=>{if(selected)renderResults();};
+  ft.onchange=()=>{ if(selected)renderResults(); else renderNearby(); };
   const q=document.getElementById('q'),sg=document.getElementById('suggest');
   q.addEventListener('input',()=>{
     document.getElementById('btnClear').style.display=q.value?'block':'none';
@@ -307,7 +305,7 @@ function renderMetrics(sku){
       const st=ambitoStats(ambito);lomTot=m.lom_total;disp=st.disp;pct=st.pct;med=st.med;etiqueta=ambito;
     }
     box.innerHTML=
-      '<div class="mcard m-blue"><div class="big num">'+lomTot+'</div><div class="lbl">medicamentos cubiertos<br>Lista Oficial (LOM)</div></div>'+
+      '<div class="mcard m-blue" onclick="abrirListado()" style="cursor:pointer" title="Ver lista oficial de medicamentos"><div class="big num">'+lomTot+'</div><div class="lbl">medicamentos cubiertos<br>Lista Oficial (LOM) <span style="text-decoration:underline">— ver lista ▸</span></div></div>'+
       '<div class="mcard m-white" style="border-color:'+pctColor2(pct)+'55"><button class="help" onclick="explicarMetrica()">ⓘ</button><div class="big num" style="color:'+pctColor2(pct)+'">'+pct+'%</div><div class="lbl">disponibles '+etiqueta+'<br>'+disp+' de '+lomTot+' · óptimo ≥90%</div></div>'+
       '<div class="mcard m-white" style="border-color:#1d9e7555"><button class="help" onclick="explicarDias()">ⓘ</button><div class="big num" style="color:#1d9e75">'+(med==null?'—':med)+'<span style="font-size:13px"> días</span></div><div class="lbl">de abastecimiento<br>'+etiqueta+(ambito?'':' (nacional)')+'</div></div>';
     return;
@@ -402,9 +400,19 @@ function renderNearby(){
   dibujarMiniMapa(near);
 }
 function mejoresRenglones(){
-  // renglones LOM con mejor cobertura nacional (buenas noticias)
-  const top=D.sku.filter(s=>s.lom==='LOM').map(s=>{
-    const filas=D.det[s.cod]||[];const dd=filas.filter(x=>x.saldo>0&&x.dias>0&&x.dias<9999).map(x=>x.dias).sort((a,b)=>a-b);
+  // renglones LOM con mejor cobertura, respetando filtros activos (provincia/sistema/criticidad)
+  const fProv = provFiltroInicio || (document.getElementById('fProv')||{}).value || '';
+  const fSis  = (document.getElementById('fSistema')||{}).value || '';
+  const fCrit = (document.getElementById('fCrit')||{}).value || '';
+  const fTipo = (document.getElementById('fTipo')||{}).value || '';
+  const top=D.sku.filter(s=>s.lom==='LOM')
+   .filter(s=>!fSis || s.sistema===fSis)
+   .filter(s=>fCrit!=='VITAL' || s.vital==='VITAL')
+   .map(s=>{
+    let filas=D.det[s.cod]||[];
+    if(fProv) filas=filas.filter(x=>x.prov===fProv);
+    if(fTipo) filas=filas.filter(x=>x.tipo===fTipo);
+    const dd=filas.filter(x=>x.saldo>0&&x.dias>0&&x.dias<9999).map(x=>x.dias).sort((a,b)=>a-b);
     const med=dd.length?Math.round(dd[Math.floor(dd.length/2)]):0;
     const con=filas.filter(x=>x.saldo>0).length,tot=filas.length;const pct=tot?Math.round(con/tot*100):0;
     return {cod:s.cod,nombre:s.nombre,med:med,pct:pct};
@@ -435,6 +443,27 @@ function dibujarMiniMapa(near){
       pts.push([v.lat,v.lng]);
     });
     if(!provFiltroInicio&&userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:14px;height:14px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 4px rgba(30,90,158,.3)"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(mm);pts.push(userPos);}
+    // pintar provincia (del filtro o del usuario)
+    if(typeof PROVINCIAS_POLIGONOS!=='undefined'){
+      let tp=null;
+      if(provFiltroInicio) tp=PROVINCIAS_POLIGONOS.find(p=>p.prov===provFiltroInicio);
+      else if(userPos&&typeof turf!=='undefined'){try{const pt=turf.point([userPos[1],userPos[0]]);tp=PROVINCIAS_POLIGONOS.find(p=>turf.booleanPointInPolygon(pt,p.geometry));}catch(e){}}
+      if(tp){L.geoJSON(tp.geometry,{style:{color:'#1e5a9e',weight:1.5,fillColor:'#1e5a9e',fillOpacity:0.06,dashArray:'3 3'}}).addTo(mm);}
+    }
+    // ruta al nodo más cercano (OSRM por calles), solo en vista de sector del usuario
+    if(!provFiltroInicio&&userPos&&near&&near.u){
+      const dest=[near.u.lat,near.u.lng];
+      const url='https://router.project-osrm.org/route/v1/driving/'+userPos[1]+','+userPos[0]+';'+dest[1]+','+dest[0]+'?overview=full&geometries=geojson';
+      fetch(url).then(r=>r.json()).then(j=>{
+        if(j.routes&&j.routes.length){
+          const cc=j.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+          L.polyline(cc,{color:'#1e5a9e',weight:3.5,opacity:.7}).addTo(mm);
+          const km=(j.routes[0].distance/1000).toFixed(1);
+          L.marker(dest,{icon:L.divIcon({className:'',html:'<div style="font-size:20px;line-height:1">🏥</div>',iconSize:[20,20],iconAnchor:[10,18]})}).addTo(mm).bindPopup('<b>'+near.u.nombre+'</b><br>A '+km+' km por carretera');
+          try{mm.fitBounds([userPos,dest],{padding:[35,35],maxZoom:14});}catch(e){}
+        }
+      }).catch(e=>{});
+    }
     if(pts.length){try{mm.fitBounds(pts,{padding:[25,25],maxZoom:provFiltroInicio?10:12});}catch(e){mm.setView(userPos||[8.5,-80],8);}}
     else mm.setView(userPos||[8.5,-80],8);
     setTimeout(()=>mm.invalidateSize(),150);
@@ -553,7 +582,7 @@ function renderMap(filas){
   document.getElementById('legend').style.display='flex';
   document.getElementById('mapViews').style.display='flex';
   marcaVista();
-  if(!map){map=L.map('map',{scrollWheelZoom:false});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);markerLayer=L.layerGroup().addTo(map);}
+  if(!map){map=L.map('map',{scrollWheelZoom:true}).setView([8.5,-80],7);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);markerLayer=L.layerGroup().addTo(map);}
   markerLayer.clearLayers();
   if(heatMal){map.removeLayer(heatMal);heatMal=null;}if(heatBien){map.removeLayer(heatBien);heatBien=null;}
   const conStock=filas.filter(x=>x.saldo>0);const valOf=d=>(d>=9999?OPT*1.2:d);
@@ -572,14 +601,66 @@ function renderMap(filas){
     if(i===0)primerMk=mk;});
   if(userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(markerLayer).bindPopup('Tu ubicación');}
   window._mapPts=pts;
+  pintarProvinciaUsuario(filas);
   encuadrar(filas);
   setTimeout(()=>map.invalidateSize(),200);drawMapStats(filas);
   // popup automático en la UE más cercana (primera) para mostrar que es interactivo
   if(primerMk&&userPos)setTimeout(()=>{try{primerMk.openPopup();}catch(e){}},700);
 }
+
+// ---- Mapa interactivo: pintar provincia del usuario + ruta al nodo más cercano ----
+let provLayer=null, rutaLayer=null;
+function provinciaDe(lat,lng){
+  if(typeof turf==='undefined'||typeof PROVINCIAS_POLIGONOS==='undefined')return null;
+  try{
+    const pt=turf.point([lng,lat]);
+    for(const pr of PROVINCIAS_POLIGONOS){
+      if(turf.booleanPointInPolygon(pt,pr.geometry))return pr;
+    }
+  }catch(e){}
+  return null;
+}
+function pintarProvinciaUsuario(filas){
+  if(provLayer){map.removeLayer(provLayer);provLayer=null;}
+  if(!userPos)return;
+  // qué provincia resaltar: la del filtro activo, o la del usuario
+  let target=null;
+  const fp=(document.getElementById('fProv')||{}).value||'';
+  if(fp){ target=PROVINCIAS_POLIGONOS.find(p=>p.prov===fp); }
+  else { target=provinciaDe(userPos[0],userPos[1]); }
+  if(!target)return;
+  provLayer=L.geoJSON(target.geometry,{style:{color:'#1e5a9e',weight:2,fillColor:'#1e5a9e',fillOpacity:0.07,dashArray:'4 3'}}).addTo(map);
+}
+function trazarRutaAlNodo(){
+  if(rutaLayer){map.removeLayer(rutaLayer);rutaLayer=null;}
+  if(!userPos)return;
+  const near=ueMasCercana();
+  if(!near||!near.u)return;
+  const dest=[near.u.lat,near.u.lng];
+  // OSRM público: ruta por calles
+  const url='https://router.project-osrm.org/route/v1/driving/'+userPos[1]+','+userPos[0]+';'+dest[1]+','+dest[0]+'?overview=full&geometries=geojson';
+  fetch(url).then(r=>r.json()).then(j=>{
+    if(!j.routes||!j.routes.length)return;
+    const coords=j.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+    rutaLayer=L.polyline(coords,{color:'#1e5a9e',weight:4,opacity:.75}).addTo(map);
+    // banderita en el nodo destino
+    L.marker(dest,{icon:L.divIcon({className:'',html:'<div style="font-size:22px;line-height:1">🏥</div>',iconSize:[22,22],iconAnchor:[11,20]})}).addTo(rutaLayer);
+  }).catch(e=>{
+    // fallback: línea directa si OSRM falla
+    rutaLayer=L.polyline([userPos,dest],{color:'#1e5a9e',weight:3,opacity:.6,dashArray:'6 4'}).addTo(map);
+  });
+}
 function encuadrar(filas){
   if(!map)return;
-  if(vistaMapa==='sector'&&userPos){map.setView(userPos,12);return;}
+  if(rutaLayer){map.removeLayer(rutaLayer);rutaLayer=null;}
+  if(vistaMapa==='sector'&&userPos){
+    const near=ueMasCercana();
+    if(near&&near.u){
+      trazarRutaAlNodo();
+      try{map.fitBounds([userPos,[near.u.lat,near.u.lng]],{padding:[60,60],maxZoom:14});}catch(e){map.setView(userPos,12);}
+    } else { map.setView(userPos,12); }
+    return;
+  }
   if(vistaMapa==='prov'&&userPos){
     const near=ueMasCercana();const pr=near?near.u.prov:null;
     const pp=filas.filter(x=>x.lat&&x.prov===pr).map(x=>[x.lat,x.lng]);
