@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mi Farma Digital | Caja de Seguro Social</title>
+<title>Mi Farma Digital — Caja de Seguro Social</title>
 <meta name="theme-color" content="#0C447C">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -167,7 +167,7 @@
 
 <div class="wrap">
   <button id="btnBack" onclick="volver()"><i class="ti ti-arrow-left"></i> Volver</button>
-  <div class="hero" id="hero"><h1>¿Buscas tu medicina?</h1><p>Consulta en la unidad más cercana a ti.</p></div>
+  <div class="hero" id="hero"><h1>¿Buscas tu medicina?</h1><p>Te decimos si hay y dónde está la unidad más cercana a ti.</p></div>
 
   <div class="searchbar">
     <div class="searchbox"><i class="ti ti-search" style="color:#1e5a9e;font-size:20px"></i>
@@ -181,8 +181,8 @@
     <button class="btn-ghost" id="btnGeo" onclick="useGeo()"><i class="ti ti-map-pin"></i> Usar mi ubicación</button>
     <select id="fProv"><option value="">Todas las provincias</option></select>
     <select id="fTipo"><option value="">Todo tipo de unidad</option></select>
-    <select id="fSistema"><option value="">Todo sistema/uso</option></select>
-    <select id="fCrit"><option value="">Toda criticidad</option><option value="VITAL">Solo vitales</option></select>
+    <select id="fSistema" class="f-med" style="display:none"><option value="">Todo sistema/uso</option></select>
+    <select id="fCrit" class="f-med" style="display:none"><option value="">Toda criticidad</option><option value="VITAL">Solo vitales</option></select>
   </div>
 
   <div class="metrics" id="metrics"></div>
@@ -395,8 +395,11 @@ function renderNearby(){
       barra('Tu provincia',prov)+
       barra('Nacional',nac)+
     '</div>'+
-    '<div class="nc-act">Tiene <b>'+u.lom_con+'</b> de <b>'+u.lom_tot+'</b> medicamentos de la Lista Oficial — '+cmp+'.'+
-    ' &nbsp;<a class="nc-link" href="javascript:abrirModalUE(\''+near.id+'\','+near.dist.toFixed(2)+')">Ver detalle y contacto →</a></div>'+
+    '<div class="nc-act">Tiene <b>'+u.lom_con+'</b> de <b>'+u.lom_tot+'</b> medicamentos de la Lista Oficial — '+cmp+'.</div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'+
+      '<button onclick="abrirModalUE(\''+near.id+'\','+near.dist.toFixed(2)+')" style="flex:1;min-width:130px;background:#1e5a9e;color:#fff;border:none;border-radius:6px;padding:9px;font-size:13px;font-weight:600;cursor:pointer"><i class="ti ti-info-circle"></i> Ver detalle y contacto</button>'+
+      '<a href="https://www.google.com/maps/dir/?api=1&destination='+u.lat+','+u.lng+'" target="_blank" style="flex:1;min-width:130px;background:#fff;color:#1e5a9e;border:1.5px solid #1e5a9e;border-radius:6px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-map-2"></i> Cómo llegar</a>'+
+    '</div>'+
     '<div id="miniMap" style="height:200px;border-radius:8px;margin-top:12px;border:1px solid #cfd8e0"></div>'+
     mejoresRenglones()+
     '</div></div>';
@@ -522,6 +525,7 @@ function pick(cod){selected=D.sku.find(s=>s.cod===cod);
   document.getElementById('welcome').innerHTML='';document.getElementById('nearby').innerHTML='';
   document.getElementById('hero').style.display='none';
   document.getElementById('btnBack').classList.add('show');
+  document.querySelectorAll('.f-med').forEach(el=>el.style.display='');
   vistaMapa = userPos ? 'sector' : 'pais'; // arranca en mi sector si hay ubicación
   renderMetrics(selected);renderHead();sincronizarFiltros();renderResults();
   document.getElementById('btnBack').scrollIntoView({behavior:'smooth',block:'start'});}
@@ -546,6 +550,7 @@ function volver(){
   document.getElementById('scope').innerHTML='';
   document.getElementById('hero').style.display='block';
   document.getElementById('btnBack').classList.remove('show');
+  document.querySelectorAll('.f-med').forEach(el=>{el.style.display='none';el.value='';});
   // resetear vista del mapa a 'auto' para que la próxima selección arranque limpia
   vistaMapa = 'auto';
   // limpiar capas de ruta/provincia del mapa principal si existen
@@ -619,9 +624,14 @@ function renderMap(filas){
   const pts=[];let primerMk=null;
   filas.forEach((x,i)=>{if(!x.lat)return;const e=estadoUE(x.saldo,x.dias,x.nivel);
     const mk=L.circleMarker([x.lat,x.lng],{radius:8,fillColor:e.col,color:'#fff',weight:1.5,fillOpacity:.95});
-    const cob=x.saldo>0?('<br>'+e.et+' · '+e.cv):'<br>Sin existencia';
-    const tel=x.tel?'<br><i>'+x.tel.split(';')[0]+'</i>':'';
-    mk.bindPopup('<b>'+x.nombre+'</b><br>'+(x.loc||x.prov)+' · '+(x.tipo||'')+cob+'<br>Existencia: '+f(x.saldo)+tel+'<br><a href="javascript:abrirModal('+i+')">Ver más →</a>');
+    const cob=x.saldo>0?('<br><span style="color:'+e.col+';font-weight:600">'+e.et+'</span> · '+e.cv):'<br><span style="color:#c0392b;font-weight:600">Sin existencia</span>';
+    const tel=x.tel?'<br><i class="ti ti-phone"></i> '+x.tel.split(';')[0]:'';
+    const dist=x.dist!=null?' · '+x.dist.toFixed(1)+' km':'';
+    mk.bindPopup('<div style="min-width:190px"><b>'+x.nombre+'</b><br><span style="color:#666;font-size:11px">'+(x.loc||x.prov)+' · '+(x.tipo||'')+dist+'</span>'+cob+'<br>Existencia: '+f(x.saldo)+' u.'+tel+
+      '<div style="display:flex;gap:5px;margin-top:7px">'+
+      '<button onclick="abrirModal('+i+')" style="flex:1;background:#1e5a9e;color:#fff;border:none;border-radius:5px;padding:6px;font-size:11.5px;font-weight:600;cursor:pointer">Ver detalle</button>'+
+      '<a href="https://www.google.com/maps/dir/?api=1&destination='+x.lat+','+x.lng+'" target="_blank" style="flex:1;background:#fff;color:#1e5a9e;border:1px solid #1e5a9e;border-radius:5px;padding:6px;font-size:11.5px;font-weight:600;cursor:pointer;text-decoration:none;text-align:center">Cómo llegar</a>'+
+      '</div></div>');
     mk.on('click',function(){this.openPopup();});
     markerLayer.addLayer(mk);pts.push([x.lat,x.lng]);
     if(i===0)primerMk=mk;});
@@ -998,13 +1008,24 @@ function explicarEspecialidad(){
 }
 function explicarPerfil(){infoModal(
   '<h4>Perfil del medicamento</h4>'+
-  '<p>Estas etiquetas describen el rol del medicamento en la red, en lenguaje sencillo:</p>'+
+  '<p>Estas etiquetas describen el rol del medicamento en la red. Hay dos ideas distintas: cuánta cantidad se mueve (volumen) y qué tan constante es ese movimiento (demanda).</p>'+
+  '<div style="font-size:13px;font-weight:600;color:#0C447C;margin:10px 0 4px">Volumen de consumo</div>'+
   '<table class="deftbl">'+
-  '<tr><td>Alto volumen / Volumen medio / Bajo volumen</td><td>Cuánta cantidad de este medicamento mueve la red. Mide <b>volumen</b> de consumo, no qué tan seguido. Un medicamento de alto volumen concentra gran parte del consumo total.</td></tr>'+
-  '<tr><td>Demanda estable / variable / esporádica</td><td>Qué tan <b>constante</b> es ese consumo mes a mes. Estable = predecible; esporádica = aparece de forma irregular.</td></tr>'+
-  '<tr><td>★ Vital</td><td>Medicamento de importancia crítica para la atención (clasificación de la mesa técnica).</td></tr>'+
+  '<tr><td>Alto volumen</td><td>En conjunto, este grupo concentra cerca del 80% del consumo total de la red. Son los medicamentos que más se movilizan.</td></tr>'+
+  '<tr><td>Volumen medio</td><td>Tramo intermedio: representan alrededor del 15% del consumo total de la red.</td></tr>'+
+  '<tr><td>Bajo volumen</td><td>El grupo más numeroso pero de menor peso: en conjunto representan cerca del 5% restante del consumo, aunque puedan ser importantes clínicamente.</td></tr>'+
   '</table>'+
-  '<p style="font-size:12px;color:#666">Volumen y estabilidad son cosas distintas: un medicamento puede ser de bajo volumen pero demanda estable, o de alto volumen pero esporádica.</p>');}
+  '<div style="font-size:13px;font-weight:600;color:#0C447C;margin:12px 0 4px">Constancia de la demanda</div>'+
+  '<table class="deftbl">'+
+  '<tr><td>Demanda estable</td><td>Su consumo es parejo y predecible mes a mes; fácil de planificar.</td></tr>'+
+  '<tr><td>Demanda variable</td><td>El consumo sube y baja de un mes a otro, con fluctuaciones moderadas.</td></tr>'+
+  '<tr><td>Demanda esporádica</td><td>Aparece de forma irregular e impredecible; puede haber meses sin movimiento.</td></tr>'+
+  '</table>'+
+  '<div style="font-size:13px;font-weight:600;color:#0C447C;margin:12px 0 4px">Otra etiqueta</div>'+
+  '<table class="deftbl">'+
+  '<tr><td>★ Vital</td><td>Medicamento de importancia crítica para la atención, según la clasificación de la mesa técnica.</td></tr>'+
+  '</table>'+
+  '<p style="font-size:12px;color:#666">Volumen y constancia son independientes: un medicamento puede ser de bajo volumen pero demanda estable, o de alto volumen pero esporádica.</p>');}
 
 /* ===== Geo (puntos 3,4) ===== */
 function activarGeo(p){userPos=[p.coords.latitude,p.coords.longitude];geoNegada=false;
