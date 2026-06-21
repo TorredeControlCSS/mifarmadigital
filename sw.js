@@ -1,10 +1,9 @@
-// Service Worker — Disponibilidad de Medicamentos CSS
-// Cache-first para funcionamiento offline tras la primera carga.
-const CACHE = 'medicamentos-css-v8';
+// Service Worker — Mi Farma Digital · CSS Panamá
+// Cache-first para offline, pero data.json en NETWORK-FIRST (datos siempre frescos).
+const CACHE = 'mifarma-v9';
 const ASSETS = [
   './',
   './index.html',
-  './data.json',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -30,11 +29,26 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+
+  // data.json: NETWORK-FIRST -> siempre trae el más reciente; si no hay red, usa cache.
+  if (e.request.url.includes('data.json')) {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp && resp.status === 200) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // resto: CACHE-FIRST; cachea tiles del mapa y recursos nuevos sobre la marcha.
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(resp => {
-        // cachear los tiles del mapa y recursos nuevos sobre la marcha
         if (resp && resp.status === 200 && (e.request.url.includes('tile.openstreetmap') || e.request.url.includes('cdnjs'))) {
           const clone = resp.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
