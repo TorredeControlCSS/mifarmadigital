@@ -602,9 +602,12 @@ function renderWelcome(){if(selected)return;
 
 function doSearch(){const v=norm(document.getElementById('q').value);if(v.length<2)return;
   const hit=D.sku.find(s=>norm(s.nombre)===v)||D.sku.find(s=>norm(s.nombre).includes(v));if(hit)pick(hit.cod);}
+let _ueOrigen=null; // UE desde la que se entró a un renglón (modo Explorar)
 function pick(cod){selected=D.sku.find(s=>s.cod===cod);
-  // si veníamos del modo Explorar, pasar al modo geográfico para "ir hacia allá"
+  _ueOrigen=null;
+  // si veníamos del modo Explorar, pasar al modo geográfico, recordando la UE de origen
   if(modoActual==='explorar'){
+    _ueOrigen=ueSel; // recordamos la unidad que el usuario estaba consultando
     modoActual='buscar';
     document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-mode')==='buscar'));
     document.getElementById('zonaExplorar').style.display='none';
@@ -618,7 +621,9 @@ function pick(cod){selected=D.sku.find(s=>s.cod===cod);
   document.getElementById('hero').style.display='none';
   document.getElementById('btnBack').classList.add('show');
   document.querySelectorAll('.f-med').forEach(el=>el.style.display='');
-  vistaMapa = userPos ? 'sector' : 'pais'; // arranca en mi sector si hay ubicación
+  // si entró desde una UE concreta, mostrar ese renglón a nivel país centrado en esa UE;
+  // si no, comportamiento normal (sector si hay ubicación)
+  vistaMapa = _ueOrigen ? 'pais' : (userPos ? 'sector' : 'pais');
   renderMetrics(selected);renderHead();sincronizarFiltros();renderResults();
   document.getElementById('btnBack').scrollIntoView({behavior:'smooth',block:'start'});}
 
@@ -633,6 +638,7 @@ function limpiar(){
 function volver(){
   // Volver de un renglón a la pantalla inicial CONSERVANDO la provincia/tipo que el usuario exploraba
   selected=null;
+  _ueOrigen=null;
   document.getElementById('q').value='';
   document.getElementById('btnClear').style.display='none';
   document.getElementById('medhead').innerHTML='';
@@ -645,6 +651,8 @@ function volver(){
   document.getElementById('hero').style.display='block';
   document.getElementById('btnBack').classList.remove('show');
   document.querySelectorAll('.f-med').forEach(el=>{el.style.display='none';el.value='';});
+  // restaurar el filtro de provincia (sincronizarFiltros lo oculta en vista sector/prov)
+  const fpv=document.getElementById('fProv'); if(fpv)fpv.style.display='';
   vistaMapa = 'auto';
   // NO se borra provFiltroInicio ni fProv: el usuario regresa a donde estaba explorando
   if(typeof provLayer!=='undefined'&&provLayer&&map){map.removeLayer(provLayer);provLayer=null;}
@@ -699,6 +707,13 @@ function ueElegir(id){
   document.getElementById('ueList').classList.remove('show');
   renderExplorar();
 }
+function ueVolverLista(){
+  ueSel=null; _ueVerMas=false;
+  document.getElementById('ueInput').value='';
+  document.getElementById('ueList').classList.remove('show');
+  renderExplorar();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 // renglones de una UE concreta (match por id, fallback por nombre), priorizados por cobertura
 function renglonesDeUE(id){
   const u=D.inst[id]; if(!u)return [];
@@ -709,10 +724,13 @@ function renglonesDeUE(id){
     if(!fila)return;
     out.push({cod:s.cod,nombre:s.nombre,lom:s.lom,saldo:fila.saldo||0,dias:fila.dias,nivel:fila.nivel});
   });
-  // prioriza: con existencia primero, luego por días de cobertura desc
+  // ordenar por ESTADO visible (Disponible → Quedan pocas → Sin existencia), luego por días desc
+  const rangoEstado=r=>{const e=estadoUE(r.saldo,r.dias,r.nivel);return e.clr==='ok'?0:(e.clr==='warn'?1:2);};
   out.sort((a,b)=>{
-    const sa=a.saldo>0?1:0, sb=b.saldo>0?1:0; if(sa!==sb)return sb-sa;
-    const da=(a.dias>0&&a.dias<9999)?a.dias:0, db=(b.dias>0&&b.dias<9999)?b.dias:0; return db-da;
+    const ra=rangoEstado(a), rb=rangoEstado(b); if(ra!==rb)return ra-rb;
+    const da=(a.dias>0&&a.dias<9999)?a.dias:(a.dias>=9999?1e9:0);
+    const db=(b.dias>0&&b.dias<9999)?b.dias:(b.dias>=9999?1e9:0);
+    return db-da;
   });
   return out;
 }
@@ -741,6 +759,7 @@ function renderExplorar(){
       '<span style="color:#0C447C">'+r.nombre.split(',')[0]+(r.lom==='LOM'?'':' <span style="color:#a05a12;font-size:10px">(fuera de LOM)</span>')+'</span>'+
       '<span class="qty" style="color:'+e.col+'">'+(r.saldo>0?f(r.saldo)+' u. · '+e.et:'Sin existencia')+'</span></div>';};
   out.innerHTML=
+    '<button id="btnUeBack" onclick="ueVolverLista()" style="background:#e6f1fb;border:1px solid #b5d4f4;color:#1e5a9e;font-size:13px;font-weight:600;cursor:pointer;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:inline-flex;align-items:center;gap:6px"><i class="ti ti-arrow-left"></i> Volver a la lista de unidades</button>'+
     '<div class="nearcard"><div class="nc-top"><i class="ti ti-building-hospital"></i> '+u.tipo+' · '+(u.loc||u.prov)+'</div>'+
     '<div class="nc-body"><div class="nc-name">'+u.nombre+'</div>'+
     '<div class="nc-bars">'+barra('Abastecimiento',u.pct)+'</div>'+
@@ -851,6 +870,7 @@ function renderMap(filas){
   const pts=[];let primerMk=null;
   const ftActivo=(document.getElementById('fTipo')||{}).value||'';
   const letraTipo=t=>({'CAPPS':'C','Hospital':'H','Policlínica':'P','ULAPS':'U'}[t]||(t?t[0].toUpperCase():'•'));
+  window._mkById={};
   filas.forEach((x,i)=>{if(!x.lat)return;const e=estadoUE(x.saldo,x.dias,x.nivel);
     const atenuado = ftActivo && x.tipo!==ftActivo;
     const op = atenuado?0.25:1;
@@ -865,6 +885,7 @@ function renderMap(filas){
       '</div></div>');
     mk.on('click',function(){this.openPopup();});
     markerLayer.addLayer(mk);pts.push([x.lat,x.lng]);
+    if(x.id!=null)window._mkById[String(x.id)]=mk;
     if(i===0)primerMk=mk;});
   if(userPos){L.marker(userPos,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#1e5a9e;border:3px solid #fff;box-shadow:0 0 0 5px rgba(30,90,158,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(markerLayer).bindPopup('Tu ubicación');}
   window._mapPts=pts;
@@ -936,6 +957,16 @@ function trazarRutaAlNodo(destUE){
 function encuadrar(filas){
   if(!map)return;
   if(rutaLayer){map.removeLayer(rutaLayer);rutaLayer=null;}
+  // Prioridad: si se entró desde una UE concreta (modo Explorar), centrar en ESA unidad
+  if(_ueOrigen){
+    const u=D.inst[_ueOrigen];
+    if(u&&u.lat){
+      try{map.setView([u.lat,u.lng],14);}catch(e){}
+      const mk=(window._mkById||{})[String(_ueOrigen)];
+      if(mk)setTimeout(()=>{try{mk.openPopup();}catch(e){}},400);
+      return;
+    }
+  }
   if(vistaMapa==='sector'&&userPos){
     // destino de la ruta: la UE más cercana CON existencia del renglón
     const destino=ueCercanaConStock(filas);
@@ -963,6 +994,7 @@ function encuadrar(filas){
 }
 function setVista(v){
   vistaMapa=v;
+  _ueOrigen=null; // el usuario toma control del mapa; ya no forzamos la UE de origen
   // Al elegir Vista país, limpiar el filtro de provincia para ver todo el país
   if(v==='pais'){
     const fp=document.getElementById('fProv'); if(fp){fp.value='';} provFiltroInicio='';
