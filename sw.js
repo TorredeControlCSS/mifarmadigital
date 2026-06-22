@@ -1,6 +1,6 @@
 // Service Worker — Mi Farma Digital · CSS Panamá
 // Cache-first para offline, pero data.json en NETWORK-FIRST (datos siempre frescos).
-const CACHE = 'mifarma-v22';
+const CACHE = 'mifarma-v23';
 const ASSETS = [
   './',
   './index.html',
@@ -56,7 +56,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return resp;
-      }).catch(() => cached);
+      }).catch(() => cached || Response.error());
     })
   );
 });
