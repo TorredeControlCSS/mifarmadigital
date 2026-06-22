@@ -822,19 +822,25 @@ function setModo(m){
   if(m==='explorar'){
     // salir de cualquier renglón abierto y ocultar el mundo geográfico
     if(selected)volver();
+    document.getElementById('backRow').classList.remove('show');
     zb.style.display='none'; ze.style.display='block';
     document.getElementById('metrics').style.display='none';
     document.getElementById('nearby').innerHTML='';
     document.getElementById('welcome').innerHTML='';
+    document.getElementById('hero').style.display='block';
     document.getElementById('hero').innerHTML='<h1>Explorar disponibilidad</h1><p>Elige una unidad de salud para ver qué medicamentos tiene y su cobertura.</p>';
     poblarExplorar();
     renderExplorar();
   } else {
+    // volver a modo buscar: si había un renglón abierto, cerrarlo y limpiar el estado del mapa
     zb.style.display='block'; ze.style.display='none';
-    document.getElementById('metrics').style.display='flex';
-    document.getElementById('hero').innerHTML='<h1>¿Buscas tu medicina?</h1><p>Consulta en la unidad más cercana a ti.</p>';
     document.getElementById('explorarOut').innerHTML='';
-    renderMetrics(null);renderNearby();renderWelcome();
+    ueSel=null; _ueOrigen=null; _ueVerMas=false;
+    document.getElementById('hero').style.display='block';
+    document.getElementById('hero').innerHTML='<h1>¿Buscas tu medicina?</h1><p>Consulta en la unidad más cercana a ti.</p>';
+    document.getElementById('metrics').style.display='flex';
+    if(selected){ volver(); } // volver() ya limpia renglón, mapa, nearby y re-renderiza inicio
+    else { renderMetrics(null);renderNearby();renderWelcome(); }
   }
   window.scrollTo({top:0,behavior:'smooth'});
 }
