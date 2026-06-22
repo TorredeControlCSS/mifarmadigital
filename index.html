@@ -210,12 +210,13 @@
       <div id="suggest" class="suggest" style="display:none"></div>
     </div>
 
-    <div class="filters">
+    <!-- Filtros de la VISTA INICIAL (sin renglón): provincia, tipo, sistema, criticidad -->
+    <div class="filters" id="filtrosInicio">
       <button class="btn-ghost" id="btnGeo" onclick="useGeo()"><i class="ti ti-map-pin"></i> Usar mi ubicación</button>
       <select id="fProv"><option value="">Todas las provincias</option></select>
       <select id="fTipo"><option value="">Todo tipo de unidad</option></select>
-      <select id="fSistema" class="f-med" style="display:none"><option value="">Todo sistema/uso</option></select>
-      <select id="fCrit" class="f-med" style="display:none"><option value="">Toda criticidad</option><option value="VITAL">Solo vitales</option></select>
+      <select id="fSistema"><option value="">Todo sistema/uso</option></select>
+      <select id="fCrit"><option value="">Toda criticidad</option><option value="VITAL">Solo vitales</option></select>
     </div>
   </div>
 
@@ -233,29 +234,35 @@
     <div id="explorarOut"></div>
   </div>
 
-  <div class="metrics" id="metrics"></div>
-  <div id="nearby"></div>
-  <div id="welcome"></div>
+  <!-- VISTA INICIAL (sin renglón seleccionado) -->
+  <div id="vistaInicio">
+    <div class="metrics" id="metrics"></div>
+    <div id="nearby"></div>
+    <div id="welcome"></div>
+  </div>
 
-  <div id="medhead"></div>
-  <div id="mapViews" style="display:none;gap:6px;margin-bottom:8px">
-    <button class="mv-btn" data-v="pais" onclick="setVista('pais')">Vista país</button>
-    <button class="mv-btn" data-v="prov" onclick="setVista('prov')">Mi provincia</button>
-    <button class="mv-btn" data-v="sector" onclick="setVista('sector')">Mi sector</button>
+  <!-- VISTA DE RENGLÓN SELECCIONADO -->
+  <div id="vistaRenglon" style="display:none">
+    <div id="medhead"></div>
+    <div id="mapViews" style="display:none;gap:6px;margin-bottom:8px">
+      <button class="mv-btn" data-v="pais" onclick="setVista('pais')">Vista país</button>
+      <button class="mv-btn" data-v="prov" onclick="setVista('prov')">Mi provincia</button>
+      <button class="mv-btn" data-v="sector" onclick="setVista('sector')">Mi sector</button>
+    </div>
+    <div id="mapCompare" style="display:none"></div>
+    <div id="map" style="display:none"></div>
+    <div class="map-stats" id="mapStats" style="display:none"></div>
+    <div class="legend" id="legend" style="display:none">
+      <span><span class="dot" style="background:#1d9e75"></span>Disponible</span>
+      <span><span class="dot" style="background:#d89a1a"></span>Quedan pocas</span>
+      <span><span class="dot" style="background:#c0392b"></span>Sin existencia</span>
+      <span><span class="dot" style="background:#1e5a9e"></span>Tu ubicación</span>
+      <span style="color:#888">Letras: C=CAPPS · H=Hospital · P=Policlínica · U=ULAPS</span>
+      <span style="color:#888;font-style:italic">· toca un punto para ver la unidad</span>
+    </div>
+    <div class="scope" id="scope"></div>
+    <div class="results" id="results"></div>
   </div>
-  <div id="mapCompare" style="display:none"></div>
-  <div id="map" style="display:none"></div>
-  <div class="map-stats" id="mapStats" style="display:none"></div>
-  <div class="legend" id="legend" style="display:none">
-    <span><span class="dot" style="background:#1d9e75"></span>Disponible</span>
-    <span><span class="dot" style="background:#d89a1a"></span>Quedan pocas</span>
-    <span><span class="dot" style="background:#c0392b"></span>Sin existencia</span>
-    <span><span class="dot" style="background:#1e5a9e"></span>Tu ubicación</span>
-    <span style="color:#888">Letras: C=CAPPS · H=Hospital · P=Policlínica · U=ULAPS</span>
-    <span style="color:#888;font-style:italic">· toca un punto para ver la unidad</span>
-  </div>
-  <div class="scope" id="scope"></div>
-  <div class="results" id="results"></div>
 </div>
 
 <div class="modal-bg" id="tablaBg" onclick="if(event.target===this)cerrarTabla()">
@@ -307,7 +314,7 @@ function boot(){
   const sistemas=[...new Set(D.sku.filter(s=>s.sistema).map(s=>s.sistema))].sort();
   sistemas.forEach(s=>fs.innerHTML+='<option>'+s+'</option>');
   const fc=document.getElementById('fCrit');
-  fs.onchange=fc.onchange=()=>{ if(selected)renderResults(); else renderNearby(); };
+  fs.onchange=fc.onchange=()=>{ if(selected)renderResults(); else {renderWelcome();renderNearby();} };
   fp.onchange=()=>{
     if(selected){
       // si eligió una provincia, el mapa entra en modo país pero filtrado a esa provincia;
@@ -583,7 +590,10 @@ function barra(lab,pct){const c=pctColor(pct);
 
 function renderWelcome(){if(selected)return;
   if(userPos){document.getElementById('welcome').innerHTML='';return;} // si hay geo, la near card es suficiente
-  const vitales=D.sku.filter(s=>s.vital==='VITAL'&&s.lom==='LOM').slice(0,6);
+  const fSis=(document.getElementById('fSistema')||{}).value||'';
+  let pool=D.sku.filter(s=>s.lom==='LOM');
+  if(fSis)pool=pool.filter(s=>s.sistema===fSis);
+  const vitales=pool.filter(s=>s.vital==='VITAL').slice(0,6);
   // Invitación a activar ubicación (estado intermedio, estilo apps de autos)
   let geoInvite='';
   if(geoNegada){
@@ -635,10 +645,12 @@ function pick(cod){selected=D.sku.find(s=>s.cod===cod);
   }
   document.getElementById('metrics').style.display='flex';
   document.getElementById('q').value=selected.nombre;document.getElementById('suggest').style.display='none';
-  document.getElementById('welcome').innerHTML='';document.getElementById('nearby').innerHTML='';
+  // alternar contenedores: imposible encimar inicio y renglón
+  document.getElementById('vistaInicio').style.display='none';
+  document.getElementById('vistaRenglon').style.display='block';
+  document.getElementById('filtrosInicio').style.display='none'; // sistema/criticidad/provincia no aplican en renglón
   document.getElementById('hero').style.display='none';
   document.getElementById('backRow').classList.add('show');
-  document.querySelectorAll('.f-med').forEach(el=>el.style.display='');
   // si entró desde una UE concreta, mostrar ese renglón a nivel país centrado en esa UE;
   // si no, comportamiento normal (sector si hay ubicación)
   vistaMapa = _ueOrigen ? 'pais' : (userPos ? 'sector' : 'pais');
@@ -659,6 +671,10 @@ function volver(){
   _ueOrigen=null;
   document.getElementById('q').value='';
   document.getElementById('btnClear').style.display='none';
+  // alternar contenedores: mostrar inicio, ocultar renglón
+  document.getElementById('vistaRenglon').style.display='none';
+  document.getElementById('vistaInicio').style.display='block';
+  document.getElementById('filtrosInicio').style.display='flex';
   document.getElementById('medhead').innerHTML='';
   document.getElementById('results').innerHTML='';
   document.getElementById('map').style.display='none';
@@ -670,7 +686,6 @@ function volver(){
   document.getElementById('hero').style.display='block';
   document.getElementById('backRow').classList.remove('show');
   _nearVerMas=false;
-  document.querySelectorAll('.f-med').forEach(el=>{el.style.display='none';el.value='';});
   // restaurar el filtro de provincia (sincronizarFiltros lo oculta en vista sector/prov)
   const fpv=document.getElementById('fProv'); if(fpv)fpv.style.display='';
   vistaMapa = 'auto';
@@ -689,12 +704,12 @@ function irInicio(){
   setModo('buscar');
   volver();
 }
-// Botón Limpiar: sale del renglón y limpia provincia/tipo (estado inicial sin filtros)
+// Botón Limpiar: sale del renglón y limpia todos los filtros (estado inicial sin filtros)
 function limpiarTodo(){
   provFiltroInicio='';
-  const fp=document.getElementById('fProv'); if(fp)fp.value='';
-  const ft=document.getElementById('fTipo'); if(ft)ft.value='';
-  document.querySelectorAll('.f-med').forEach(el=>{el.value='';});
+  ['fProv','fTipo','fSistema','fCrit'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('q').value='';
+  document.getElementById('btnClear').style.display='none';
   volver();
 }
 /* ===== MODO EXPLORAR (consulta general por unidad ejecutora) ===== */
@@ -824,9 +839,8 @@ function setModo(m){
     if(selected)volver();
     document.getElementById('backRow').classList.remove('show');
     zb.style.display='none'; ze.style.display='block';
-    document.getElementById('metrics').style.display='none';
-    document.getElementById('nearby').innerHTML='';
-    document.getElementById('welcome').innerHTML='';
+    document.getElementById('vistaInicio').style.display='none';
+    document.getElementById('vistaRenglon').style.display='none';
     document.getElementById('hero').style.display='block';
     document.getElementById('hero').innerHTML='<h1>Explorar disponibilidad</h1><p>Elige una unidad de salud para ver qué medicamentos tiene y su cobertura.</p>';
     poblarExplorar();
@@ -838,9 +852,13 @@ function setModo(m){
     ueSel=null; _ueOrigen=null; _ueVerMas=false;
     document.getElementById('hero').style.display='block';
     document.getElementById('hero').innerHTML='<h1>¿Buscas tu medicina?</h1><p>Consulta en la unidad más cercana a ti.</p>';
-    document.getElementById('metrics').style.display='flex';
-    if(selected){ volver(); } // volver() ya limpia renglón, mapa, nearby y re-renderiza inicio
-    else { renderMetrics(null);renderNearby();renderWelcome(); }
+    if(selected){ volver(); } // volver() ya alterna contenedores y re-renderiza inicio
+    else {
+      document.getElementById('vistaInicio').style.display='block';
+      document.getElementById('vistaRenglon').style.display='none';
+      document.getElementById('filtrosInicio').style.display='flex';
+      renderMetrics(null);renderNearby();renderWelcome();
+    }
   }
   window.scrollTo({top:0,behavior:'smooth'});
 }
