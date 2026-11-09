@@ -1,62 +1,19 @@
-// Service Worker — Mi Farma Digital · CSS Panamá
-// Cache-first para offline, pero data.json en NETWORK-FIRST (datos siempre frescos).
-const CACHE = 'mifarma-v31';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './favicon.ico',
-  './polygons_provincias.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js'
-];
-
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})).then(() => self.skipWaiting())
-  );
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-    )).then(() => self.clients.claim())
-  );
-});
-
+// Service Worker — Mapa Nacional de Disponibilidad de Medicamentos · CSS Panamá
+// 9-nov-2026: la página y los datos van SIEMPRE primero a la red (si no hay internet, usa lo último guardado).
+// Solo los íconos y las librerías del mapa se sirven desde la caché. Reemplaza al de Mi Farma Digital (mifarma-v31).
+const CACHE = 'mapa-med-v1';
+const FIJOS = ['./icons/icon-192.png','./icons/icon-512.png','./favicon.ico',
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css','https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'];
+self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FIJOS).catch(() => {})).then(() => self.skipWaiting())); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== CACHE).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-
-  // data.json: NETWORK-FIRST -> siempre trae el más reciente; si no hay red, usa cache.
-  if (e.request.url.includes('data.json')) {
-    e.respondWith(
-      fetch(e.request).then(resp => {
-        if (resp && resp.status === 200) {
-          const clone = resp.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return resp;
-      }).catch(() => caches.match(e.request))
-    );
+  const u = e.request.url;
+  const fijo = u.includes('/icons/') || u.endsWith('favicon.ico') || u.includes('cdnjs.cloudflare.com') || u.includes('tile.openstreetmap');
+  if (fijo) {
+    e.respondWith(caches.match(e.request).then(c => c || fetch(e.request).then(r => { if (r && r.status === 200) { const k = r.clone(); caches.open(CACHE).then(x => x.put(e.request, k)); } return r; })));
     return;
   }
-
-  // resto: CACHE-FIRST; cachea tiles del mapa y recursos nuevos sobre la marcha.
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(resp => {
-        if (resp && resp.status === 200 && (e.request.url.includes('tile.openstreetmap') || e.request.url.includes('cdnjs'))) {
-          const clone = resp.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return resp;
-      }).catch(() => cached || Response.error());
-    })
-  );
+  // todo lo demás: red primero; solo se guarda copia de lo propio (página y lom.json), no de los datos de otros repos
+  e.respondWith(fetch(e.request).then(r => { if (r && r.status === 200 && u.startsWith(self.registration.scope)) { const k = r.clone(); caches.open(CACHE).then(x => x.put(e.request, k)); } return r; }).catch(() => caches.match(e.request)));
 });
